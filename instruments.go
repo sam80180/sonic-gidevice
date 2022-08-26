@@ -662,42 +662,41 @@ type DeviceInfo struct {
 }
 
 type CPUInfo struct {
-	Pid            string  `json:"PID"`                      // 线程
-	CPUCount       int     `json:"cpuCount"`                 // CPU总数
-	TimeStamp      int64   `json:"timeStamp"`                // 时间戳
-	CPUUsage       float64 `json:"cpuUsage,omitempty"`       // 单个进程的CPU使用率
-	SysCpuUsage    float64 `json:"sysCpuUsage,omitempty"`    // 系统总体CPU占用
-	AttrCtxSwitch  int64   `json:"attrCtxSwitch,omitempty"`  // 上下文切换数
-	AttrIntWakeups int64   `json:"attrIntWakeups,omitempty"` // 唤醒数
-	Mess           string  `json:"mess,omitempty"`           // 提示信息，当PID没输入或者信息错误时提示
+	Pid            string  `json:"PID,omitempty"`                   // 进程ID
+	CPUCount       int     `json:"SystemCpuCount"`                  // CPU总数
+	TimeStamp      int64   `json:"TimeStamp"`                       // 时间戳
+	CPUUsage       float64 `json:"ProcessCpuUsage,omitempty"`       // 单个进程的CPU使用率
+	SysCpuUsage    float64 `json:"SystemCpuUsage,omitempty"`        // 系统总体CPU占用
+	AttrCtxSwitch  int64   `json:"ProcessAttrCtxSwitch,omitempty"`  // 上下文切换数
+	AttrIntWakeups int64   `json:"ProcessAttrIntWakeups,omitempty"` // 唤醒数
+	Mess           string  `json:"ProcessInfo,omitempty"`           // 提示信息，当PID没输入或者信息错误时提示
 }
 
 type FPSInfo struct {
-	FPS       int   `json:"fps"`
-	TimeStamp int64 `json:"timeStamp"`
+	FPS       int   `json:"FPS"`
+	TimeStamp int64 `json:"TimeStamp"` // 时间戳
 }
 
 type GPUInfo struct {
-	TilerUtilization    int64  `json:"tilerUtilization"` // 处理顶点的GPU时间占比
-	TimeStamp           int64  `json:"timeStamp"`
-	Mess                string `json:"mess,omitempty"`      // 提示信息，当PID没输入时提示
-	DeviceUtilization   int64  `json:"deviceUtilization"`   // 设备利用率
-	RendererUtilization int64  `json:"rendererUtilization"` // 渲染器利用率
+	TilerUtilization    int64 `json:"TilerUtilization"`    // 处理顶点的GPU时间占比
+	TimeStamp           int64 `json:"TimeStamp"`           // 时间戳
+	DeviceUtilization   int64 `json:"DeviceUtilization"`   // 设备利用率
+	RendererUtilization int64 `json:"RendererUtilization"` // 渲染器利用率
 }
 
 type MEMInfo struct {
-	Anon       int64  `json:"anon"`           // 虚拟内存
-	PhysMemory int64  `json:"physMemory"`     // 物理内存
-	Rss        int64  `json:"rss"`            // 总内存
-	Vss        int64  `json:"vss"`            // 虚拟内存
-	TimeStamp  int64  `json:"timeStamp"`      //
-	Mess       string `json:"mess,omitempty"` // 提示信息，当PID没输入或者信息错误时提示
+	Anon       int64  `json:"AnonMemory"`            // 虚拟内存
+	PhysMemory int64  `json:"PhysMemory"`            // 物理内存
+	Rss        int64  `json:"Rss"`                   // 总内存
+	Vss        int64  `json:"Vss"`                   // 虚拟内存
+	TimeStamp  int64  `json:"TimeStamp"`             // 时间戳
+	Mess       string `json:"ProcessInfo,omitempty"` // 提示信息，当PID没输入或者信息错误时提示
 }
 
 type NetWorkingInfo struct {
-	RxBytes   int64 `json:"rxBytes"`
-	RxPackets int64 `json:"rxPackets"`
-	TxBytes   int64 `json:"txBytes"`
-	TxPackets int64 `json:"txPackets"`
-	TimeStamp int64 `json:"timeStamp"`
+	RxBytes   int64 `json:"RxBytes"`
+	RxPackets int64 `json:"RxPackets"`
+	TxBytes   int64 `json:"TxBytes"`
+	TxPackets int64 `json:"TxPackets"`
+	TimeStamp int64 `json:"TimeStamp"` // 时间戳
 }
