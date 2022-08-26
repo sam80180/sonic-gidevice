@@ -47,6 +47,7 @@ type device struct {
 	springBoard       SpringBoard
 	crashReportMover  CrashReportMover
 	pcapd             Pcapd
+	webInspector      WebInspector
 }
 
 func (d *device) Properties() DeviceProperties {
@@ -542,6 +543,20 @@ func (d *device) GetInterfaceOrientation() (orientation libimobiledevice.Orienta
 	return
 }
 
+func (d *device) WebInspectorService() (webInspector WebInspector, err error) {
+	if d.webInspector != nil {
+		return d.webInspector, nil
+	}
+	if _, err = d.lockdownService(); err != nil {
+		return nil, err
+	}
+	if d.webInspector, err = d.lockdown.WebInspectorService(); err != nil {
+		return nil, err
+	}
+	webInspector = d.webInspector
+	return
+}
+
 func (d *device) PcapdService() (pcapd Pcapd, err error) {
 	// if d.pcapd != nil {
 	// 	return d.pcapd, nil
@@ -657,7 +672,7 @@ func (d *device) XCTest(bundleID string, opts ...XCTestOption) (out <-chan strin
 		// fmt.Println("###### xcTestManager2 ### _Unregistered -->", m)
 	})
 
-	sessionId := uuid.NewV4()
+	sessionId, _ := uuid.NewV4()
 	if err = xcTestManager2.initiateSession(xcodeVersion, nskeyedarchiver.NewNSUUID(sessionId.Bytes())); err != nil {
 		return _out, cancelFunc, err
 	}
