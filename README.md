@@ -12,7 +12,7 @@ We will optimize and customize based on this, and we will also provide our pr to
 ## Installation
 
 ```shell script
-go get github.com/electricbubble/gidevice
+go get github.com/SonicCloudOrg/sonic-gidevice
 ```
 
 #### Devices
@@ -21,7 +21,7 @@ go get github.com/electricbubble/gidevice
 package main
 
 import (
-	giDevice "github.com/electricbubble/gidevice"
+	giDevice "github.com/SonicCloudOrg/sonic-gidevice"
 	"log"
 )
 
@@ -51,7 +51,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	giDevice "github.com/electricbubble/gidevice"
+	giDevice "github.com/SonicCloudOrg/sonic-gidevice"
 	"log"
 )
 
@@ -114,7 +114,7 @@ package main
 
 import (
 	"encoding/base64"
-	giDevice "github.com/electricbubble/gidevice"
+	giDevice "github.com/SonicCloudOrg/sonic-gidevice"
 	"log"
 )
 
@@ -161,7 +161,7 @@ func main() {
 package main
 
 import (
-	giDevice "github.com/electricbubble/gidevice"
+	giDevice "github.com/SonicCloudOrg/sonic-gidevice"
 	"log"
 	"path/filepath"
 )
@@ -214,7 +214,7 @@ func main() {
 package main
 
 import (
-	giDevice "github.com/electricbubble/gidevice"
+	giDevice "github.com/SonicCloudOrg/sonic-gidevice"
 	"image"
 	"image/jpeg"
 	"image/png"
@@ -274,7 +274,7 @@ func main() {
 package main
 
 import (
-	giDevice "github.com/electricbubble/gidevice"
+	giDevice "github.com/SonicCloudOrg/sonic-gidevice"
 	"log"
 )
 
@@ -326,7 +326,7 @@ package main
 
 import (
 	"fmt"
-	giDevice "github.com/electricbubble/gidevice"
+	giDevice "github.com/SonicCloudOrg/sonic-gidevice"
 	"log"
 	"os"
 	"os/signal"
@@ -378,7 +378,7 @@ package main
 
 import (
 	"fmt"
-	giDevice "github.com/electricbubble/gidevice"
+	giDevice "github.com/SonicCloudOrg/sonic-gidevice"
 	"io"
 	"log"
 	"net"
