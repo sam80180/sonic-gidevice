@@ -108,6 +108,7 @@ type Lockdown interface {
 	DiagnosticsRelayService() (diagnostics DiagnosticsRelay, err error)
 	CrashReportMoverService() (crashReportMover CrashReportMover, err error)
 	SpringBoardService() (springBoard SpringBoard, err error)
+	WebInspectorService() (webInspector WebInspector, err error)
 }
 
 type ImageMounter interface {
@@ -220,6 +221,15 @@ type Pcapd interface {
 type DiagnosticsRelay interface {
 	Reboot() error
 	Shutdown() error
+}
+
+type WebInspector interface {
+	SetPartialsSupported(isCompleteSupported bool)
+	SetPartialsMaxLength(maxLent int)
+
+	SendWebkitMsg(selector string, args interface{}) error
+
+	ReceiveWebkitMsg() (response interface{}, err error)
 }
 
 type CrashReportMover interface {
@@ -355,6 +365,15 @@ func WithUpdateToken(updateToken string) AppListOption {
 	return func(opt *appListOption) {
 		opt.updateToken = updateToken
 	}
+}
+
+type PerfmonOption struct {
+	PID             string
+	OpenChanGPU     bool
+	OpenChanFPS     bool
+	OpenChanCPU     bool
+	OpenChanMEM     bool
+	OpenChanNetWork bool
 }
 
 type Process struct {
