@@ -79,6 +79,8 @@ type Device interface {
 	GetInterfaceOrientation() (orientation OrientationState, err error)
 
 	WebInspectorService() (webInspector WebInspector, err error)
+
+	GetPerfmon(opts *PerfmonOption) (out chan interface{}, outCancel context.CancelFunc, perfErr error)
 }
 
 type DeviceProperties = libimobiledevice.DeviceProperties
@@ -156,6 +158,19 @@ type Instruments interface {
 	// SysMonStart(cfg ...interface{}) (_ interface{}, err error)
 
 	registerCallback(obj string, cb func(m libimobiledevice.DTXMessageResult))
+
+	StartOpenglServer(ctx context.Context) (chanFPS chan FPSInfo, chanGPU chan GPUInfo, cancel context.CancelFunc, err error)
+
+	StopOpenglServer() (err error)
+
+	StartSysmontapServer(pid string, ctx context.Context) (chanCPU chan CPUInfo, chanMem chan MEMInfo, cancel context.CancelFunc, err error)
+
+	StopSysmontapServer() (err error)
+	//ProcessNetwork(pid int) (out <-chan interface{}, cancel context.CancelFunc, err error)
+
+	StartNetWorkingServer(ctx context.Context) (chanNetWorking chan NetWorkingInfo, cancel context.CancelFunc, err error)
+
+	StopNetWorkingServer() (err error)
 }
 
 type Testmanagerd interface {

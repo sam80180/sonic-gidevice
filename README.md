@@ -1,15 +1,18 @@
-# Golang-iDevice
+<p align="center">
+  <img width="80px" src="https://raw.githubusercontent.com/SonicCloudOrg/sonic-server/main/logo.png">
+</p>
+<p align="center">🎉Library of Communicate with iOS devices implemented with Golang</p>
 
-[![go doc](https://godoc.org/github.com/electricbubble/gidevice?status.svg)](https://pkg.go.dev/github.com/electricbubble/gidevice?tab=doc#pkg-index)
-[![go report](https://goreportcard.com/badge/github.com/electricbubble/gidevice)](https://goreportcard.com/report/github.com/electricbubble/gidevice)
-[![license](https://img.shields.io/github/license/electricbubble/gidevice)](https://github.com/electricbubble/gidevice/blob/master/LICENSE)
+This repo was fork from [gidevice](https://github.com/electricbubble/gidevice).
+We will optimize and customize based on this, and we will also provide our pr to the original repo.
 
-> much more easy to use 👉 [electricbubble/gidevice-cli](https://github.com/electricbubble/gidevice-cli)
+### Official Website
+[Sonic Official Website](https://sonic-cloud.gitee.io)
 
 ## Installation
 
 ```shell script
-go get github.com/electricbubble/gidevice
+go get github.com/SonicCloudOrg/sonic-gidevice
 ```
 
 #### Devices
@@ -18,7 +21,7 @@ go get github.com/electricbubble/gidevice
 package main
 
 import (
-	giDevice "github.com/electricbubble/gidevice"
+	giDevice "github.com/SonicCloudOrg/sonic-gidevice"
 	"log"
 )
 
@@ -48,7 +51,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	giDevice "github.com/electricbubble/gidevice"
+	giDevice "github.com/SonicCloudOrg/sonic-gidevice"
 	"log"
 )
 
@@ -111,7 +114,7 @@ package main
 
 import (
 	"encoding/base64"
-	giDevice "github.com/electricbubble/gidevice"
+	giDevice "github.com/SonicCloudOrg/sonic-gidevice"
 	"log"
 )
 
@@ -158,7 +161,7 @@ func main() {
 package main
 
 import (
-	giDevice "github.com/electricbubble/gidevice"
+	giDevice "github.com/SonicCloudOrg/sonic-gidevice"
 	"log"
 	"path/filepath"
 )
@@ -211,7 +214,7 @@ func main() {
 package main
 
 import (
-	giDevice "github.com/electricbubble/gidevice"
+	giDevice "github.com/SonicCloudOrg/sonic-gidevice"
 	"image"
 	"image/jpeg"
 	"image/png"
@@ -271,7 +274,7 @@ func main() {
 package main
 
 import (
-	giDevice "github.com/electricbubble/gidevice"
+	giDevice "github.com/SonicCloudOrg/sonic-gidevice"
 	"log"
 )
 
@@ -323,7 +326,7 @@ package main
 
 import (
 	"fmt"
-	giDevice "github.com/electricbubble/gidevice"
+	giDevice "github.com/SonicCloudOrg/sonic-gidevice"
 	"log"
 	"os"
 	"os/signal"
@@ -375,7 +378,7 @@ package main
 
 import (
 	"fmt"
-	giDevice "github.com/electricbubble/gidevice"
+	giDevice "github.com/SonicCloudOrg/sonic-gidevice"
 	"io"
 	"log"
 	"net"
@@ -444,13 +447,3 @@ func main() {
 	<-done
 }
 ```
-
-## Thanks
-
-| |About|
-|---|---|
-|[libimobiledevice/libimobiledevice](https://github.com/libimobiledevice/libimobiledevice)|A cross-platform protocol library to communicate with iOS devices|
-|[anonymous5l/iConsole](https://github.com/anonymous5l/iConsole)|iOS usbmuxd communication impl iTunes protocol|
-|[alibaba/taobao-iphone-device](https://github.com/alibaba/taobao-iphone-device)|tidevice can be used to communicate with iPhone device|
-
-Thank you [JetBrains](https://www.jetbrains.com/?from=gwda) for providing free open source licenses
