@@ -78,6 +78,8 @@ type Device interface {
 	GetIconPNGData(bundleId string) (raw *bytes.Buffer, err error)
 	GetInterfaceOrientation() (orientation OrientationState, err error)
 
+	WebInspectorService() (webInspector WebInspector, err error)
+
 	GetPerfmon(opts *PerfmonOption) (out chan interface{}, outCancel context.CancelFunc, perfErr error)
 }
 
@@ -110,6 +112,7 @@ type Lockdown interface {
 	DiagnosticsRelayService() (diagnostics DiagnosticsRelay, err error)
 	CrashReportMoverService() (crashReportMover CrashReportMover, err error)
 	SpringBoardService() (springBoard SpringBoard, err error)
+	WebInspectorService() (webInspector WebInspector, err error)
 }
 
 type ImageMounter interface {
@@ -235,6 +238,15 @@ type Pcapd interface {
 type DiagnosticsRelay interface {
 	Reboot() error
 	Shutdown() error
+}
+
+type WebInspector interface {
+	SetPartialsSupported(isCompleteSupported bool)
+	SetPartialsMaxLength(maxLent int)
+
+	SendWebkitMsg(selector string, args interface{}) error
+
+	ReceiveWebkitMsg() (response interface{}, err error)
 }
 
 type CrashReportMover interface {

@@ -478,6 +478,16 @@ func (c *lockdown) SpringBoardService() (springboard SpringBoard, err error) {
 	return
 }
 
+func (c *lockdown) WebInspectorService() (webInspector WebInspector, err error) {
+	var innerConn InnerConn
+	if innerConn, err = c._startService(libimobiledevice.WebInspectorServiceName, nil); err != nil {
+		return nil, err
+	}
+	webInspectorServiceClient := libimobiledevice.NewWebInspectorClient(innerConn)
+	webInspector = newWebInspectorService(webInspectorServiceClient)
+	return
+}
+
 func (c *lockdown) CrashReportMoverService() (crashReportMover CrashReportMover, err error) {
 	var innerConn InnerConn
 	if innerConn, err = c._startService(libimobiledevice.CrashReportMoverServiceName, nil); err != nil {
