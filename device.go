@@ -611,10 +611,10 @@ func (d *device) GetPerfmon(opts *PerfmonOption) (out chan interface{}, outCance
 			return nil, nil, err
 		}
 	}
-	if opts==nil {
+	if opts == nil {
 		return nil, nil, fmt.Errorf("parameter is empty")
 	}
-	if !opts.OpenChanCPU &&!opts.OpenChanMEM &&!opts.OpenChanGPU &&!opts.OpenChanFPS &&!opts.OpenChanNetWork {
+	if !opts.OpenChanCPU && !opts.OpenChanMEM && !opts.OpenChanGPU && !opts.OpenChanFPS && !opts.OpenChanNetWork {
 		opts.OpenChanCPU = true
 		opts.OpenChanMEM = true
 		opts.OpenChanGPU = true
@@ -679,27 +679,27 @@ func (d *device) GetPerfmon(opts *PerfmonOption) (out chan interface{}, outCance
 			select {
 			case v, ok := <-chanCPU:
 				if opts.OpenChanCPU && ok {
-					result<-v
+					result <- v
 				}
 			case v, ok := <-chanMEM:
 				if opts.OpenChanMEM && ok {
-					result<-v
+					result <- v
 				}
 			case v, ok := <-chanFPS:
 				if opts.OpenChanFPS && ok {
-					result<-v
+					result <- v
 				}
 			case v, ok := <-chanGPU:
 				if opts.OpenChanGPU && ok {
-					result<-v
+					result <- v
 				}
 			case v, ok := <-chanNetWork:
 				if opts.OpenChanNetWork && ok {
-					result<-v
+					result <- v
 				}
 			case <-ctx.Done():
-				err:=d.stopPerfmon(opts)
-				if err!=nil {
+				err := d.stopPerfmon(opts)
+				if err != nil {
 					fmt.Println(err)
 				}
 				close(result)
@@ -710,7 +710,7 @@ func (d *device) GetPerfmon(opts *PerfmonOption) (out chan interface{}, outCance
 	return result, cancel, err
 }
 
-func (d *device)stopPerfmon(opts *PerfmonOption)(err error)  {
+func (d *device) stopPerfmon(opts *PerfmonOption) (err error) {
 	if _, err = d.instrumentsService(); err != nil {
 		return err
 	}
@@ -798,7 +798,7 @@ func (d *device) XCTest(bundleID string, opts ...XCTestOption) (out <-chan strin
 		// fmt.Println("###### xcTestManager2 ### _Unregistered -->", m)
 	})
 
-	sessionId, _ := uuid.NewV4()
+	sessionId := uuid.NewV4()
 	if err = xcTestManager2.initiateSession(xcodeVersion, nskeyedarchiver.NewNSUUID(sessionId.Bytes())); err != nil {
 		return _out, cancelFunc, err
 	}
