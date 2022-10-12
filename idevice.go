@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/electricbubble/gidevice/pkg/libimobiledevice"
@@ -78,9 +77,10 @@ type Device interface {
 	GetIconPNGData(bundleId string) (raw *bytes.Buffer, err error)
 	GetInterfaceOrientation() (orientation OrientationState, err error)
 
-	WebInspectorService() (webInspector WebInspector, err error)
+	PerfStart(opts ...PerfOption) (data <-chan []byte, err error)
+	PerfStop()
 
-	GetPerfmon(opts *PerfmonOption) (out chan interface{}, outCancel context.CancelFunc, perfErr error)
+	WebInspectorService() (webInspector WebInspector, err error)
 }
 
 type DeviceProperties = libimobiledevice.DeviceProperties
@@ -148,29 +148,18 @@ type Instruments interface {
 	AppList(opts ...AppListOption) (apps []Application, err error)
 	DeviceInfo() (devInfo *DeviceInfo, err error)
 
+	getPidByBundleID(bundleID string) (pid int, err error)
 	appProcess(bundleID string) (err error)
 	startObserving(pid int) (err error)
 
 	notifyOfPublishedCapabilities() (err error)
 	requestChannel(channel string) (id uint32, err error)
+	call(channel, selector string, auxiliaries ...interface{}) (result *libimobiledevice.DTXMessageResult, err error)
 
 	// sysMonSetConfig(cfg ...interface{}) (err error)
 	// SysMonStart(cfg ...interface{}) (_ interface{}, err error)
 
 	registerCallback(obj string, cb func(m libimobiledevice.DTXMessageResult))
-
-	StartOpenglServer(ctx context.Context) (chanFPS chan FPSInfo, chanGPU chan GPUInfo, cancel context.CancelFunc, err error)
-
-	StopOpenglServer() (err error)
-
-	StartSysmontapServer(pid string, ctx context.Context) (chanCPU chan CPUInfo, chanMem chan MEMInfo, cancel context.CancelFunc, err error)
-
-	StopSysmontapServer() (err error)
-	//ProcessNetwork(pid int) (out <-chan interface{}, cancel context.CancelFunc, err error)
-
-	StartNetWorkingServer(ctx context.Context) (chanNetWorking chan NetWorkingInfo, cancel context.CancelFunc, err error)
-
-	StopNetWorkingServer() (err error)
 }
 
 type Testmanagerd interface {
@@ -232,6 +221,11 @@ type SyslogRelay interface {
 
 type Pcapd interface {
 	Packet() <-chan []byte
+	Stop()
+}
+
+type Perfd interface {
+	Start() (data <-chan []byte, err error)
 	Stop()
 }
 
@@ -505,5 +499,5 @@ func debugLog(msg string) {
 	if !debugFlag {
 		return
 	}
-	log.Println(fmt.Sprintf("[go-iDevice-debug] %s", msg))
+	fmt.Printf("[go-iDevice-debug] %s\n", msg)
 }

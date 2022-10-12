@@ -1,12 +1,26 @@
 package giDevice
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/electricbubble/gidevice/pkg/libimobiledevice"
+)
+
+// instruments services
+const (
+	instrumentsServiceDeviceInfo              = "com.apple.instruments.server.services.deviceinfo"
+	instrumentsServiceProcessControl          = "com.apple.instruments.server.services.processcontrol"
+	instrumentsServiceDeviceApplictionListing = "com.apple.instruments.server.services.device.applictionListing"
+	instrumentsServiceGraphicsOpengl          = "com.apple.instruments.server.services.graphics.opengl"     // 获取 GPU/FPS
+	instrumentsServiceSysmontap               = "com.apple.instruments.server.services.sysmontap"           // 获取 CPU/Mem/Disk/Network 性能数据
+	instrumentsServiceNetworking              = "com.apple.instruments.server.services.networking"          // 获取所有网络详情数据
+	instrumentsServiceMobileNotifications     = "com.apple.instruments.server.services.mobilenotifications" // 监控应用状态
+)
+
+const (
+	instrumentsServiceXcodeNetworkStatistics = "com.apple.xcode.debug-gauge-data-providers.NetworkStatistics" // 获取单进程网络数据
+	instrumentsServiceXcodeEnergyStatistics  = "com.apple.xcode.debug-gauge-data-providers.Energy"            // 获取功耗数据
 )
 
 var _ Instruments = (*instruments)(nil)
@@ -44,7 +58,7 @@ func (i *instruments) AppLaunch(bundleID string, opts ...AppLaunchOption) (pid i
 	}
 
 	var id uint32
-	if id, err = i.requestChannel("com.apple.instruments.server.services.processcontrol"); err != nil {
+	if id, err = i.requestChannel(instrumentsServiceProcessControl); err != nil {
 		return 0, err
 	}
 
@@ -80,7 +94,7 @@ func (i *instruments) AppLaunch(bundleID string, opts ...AppLaunchOption) (pid i
 
 func (i *instruments) appProcess(bundleID string) (err error) {
 	var id uint32
-	if id, err = i.requestChannel("com.apple.instruments.server.services.processcontrol"); err != nil {
+	if id, err = i.requestChannel(instrumentsServiceProcessControl); err != nil {
 		return err
 	}
 
@@ -99,7 +113,7 @@ func (i *instruments) appProcess(bundleID string) (err error) {
 
 func (i *instruments) startObserving(pid int) (err error) {
 	var id uint32
-	if id, err = i.requestChannel("com.apple.instruments.server.services.processcontrol"); err != nil {
+	if id, err = i.requestChannel(instrumentsServiceProcessControl); err != nil {
 		return err
 	}
 
@@ -122,7 +136,7 @@ func (i *instruments) startObserving(pid int) (err error) {
 
 func (i *instruments) AppKill(pid int) (err error) {
 	var id uint32
-	if id, err = i.requestChannel("com.apple.instruments.server.services.processcontrol"); err != nil {
+	if id, err = i.requestChannel(instrumentsServiceProcessControl); err != nil {
 		return err
 	}
 
@@ -141,7 +155,7 @@ func (i *instruments) AppKill(pid int) (err error) {
 
 func (i *instruments) AppRunningProcesses() (processes []Process, err error) {
 	var id uint32
-	if id, err = i.requestChannel("com.apple.instruments.server.services.deviceinfo"); err != nil {
+	if id, err = i.requestChannel(instrumentsServiceDeviceInfo); err != nil {
 		return nil, err
 	}
 
@@ -190,7 +204,7 @@ func (i *instruments) AppList(opts ...AppListOption) (apps []Application, err er
 	}
 
 	var id uint32
-	if id, err = i.requestChannel("com.apple.instruments.server.services.device.applictionListing"); err != nil {
+	if id, err = i.requestChannel(instrumentsServiceDeviceApplictionListing); err != nil {
 		return nil, err
 	}
 
@@ -235,7 +249,7 @@ func (i *instruments) AppList(opts ...AppListOption) (apps []Application, err er
 
 func (i *instruments) DeviceInfo() (devInfo *DeviceInfo, err error) {
 	var id uint32
-	if id, err = i.requestChannel("com.apple.instruments.server.services.deviceinfo"); err != nil {
+	if id, err = i.requestChannel(instrumentsServiceDeviceInfo); err != nil {
 		return nil, err
 	}
 
@@ -260,379 +274,51 @@ func (i *instruments) registerCallback(obj string, cb func(m libimobiledevice.DT
 	i.client.RegisterCallback(obj, cb)
 }
 
-func (i *instruments) StartSysmontapServer(pid string, ctxParent context.Context) (chanCPU chan CPUInfo, chanMem chan MEMInfo, cancel context.CancelFunc, err error) {
-	var id uint32
-	if ctxParent == nil {
-		return nil, nil, nil, fmt.Errorf("missing context")
-	}
-	ctx, cancelFunc := context.WithCancel(ctxParent)
-	_outMEM := make(chan MEMInfo)
-	_outCPU := make(chan CPUInfo)
-	if id, err = i.requestChannel("com.apple.instruments.server.services.sysmontap"); err != nil {
-		return nil, nil, cancelFunc, err
-	}
+func (i *instruments) call(channel, selector string, auxiliaries ...interface{}) (
+	result *libimobiledevice.DTXMessageResult, err error) {
 
-	selector := "setConfig:"
-	args := libimobiledevice.NewAuxBuffer()
-
-	var config map[string]interface{}
-	config = make(map[string]interface{})
-	{
-		config["bm"] = 0
-		config["cpuUsage"] = true
-
-		config["procAttrs"] = []string{
-			"memVirtualSize", "cpuUsage", "ctxSwitch", "intWakeups",
-			"physFootprint", "memResidentSize", "memAnon", "pid"}
-
-		config["sampleInterval"] = 1000000000
-		// 系统信息字段
-		config["sysAttrs"] = []string{
-			"vmExtPageCount", "vmFreeCount", "vmPurgeableCount",
-			"vmSpeculativeCount", "physMemSize"}
-		// 刷新频率
-		config["ur"] = 1000
-	}
-
-	args.AppendObject(config)
-	if _, err = i.client.Invoke(selector, args, id, true); err != nil {
-		return nil, nil, cancelFunc, err
-	}
-	selector = "start"
-	args = libimobiledevice.NewAuxBuffer()
-
-	if _, err = i.client.Invoke(selector, args, id, true); err != nil {
-		return nil, nil, cancelFunc, err
-	}
-
-	i.registerCallback("", func(m libimobiledevice.DTXMessageResult) {
-		select {
-		case <-ctx.Done():
-			return
-		default:
-			mess := m.Obj
-			chanCPUAndMEMData(mess, _outMEM, _outCPU, pid)
-		}
-	})
-
-	go func() {
-		i.registerCallback("_Golang-iDevice_Over", func(_ libimobiledevice.DTXMessageResult) {
-			cancelFunc()
-		})
-		select {
-		case <-ctx.Done():
-			var isOpen bool
-			if _outCPU != nil {
-				_, isOpen = <-_outMEM
-				if isOpen {
-					close(_outMEM)
-				}
-			}
-			if _outMEM != nil {
-				_, isOpen = <-_outCPU
-				if isOpen {
-					close(_outCPU)
-				}
-			}
-		}
-		return
-	}()
-	return _outCPU, _outMEM, cancelFunc, err
-}
-
-func chanCPUAndMEMData(mess interface{}, _outMEM chan MEMInfo, _outCPU chan CPUInfo, pid string) {
-	switch mess.(type) {
-	case []interface{}:
-		var infoCPU CPUInfo
-		var infoMEM MEMInfo
-		messArray := mess.([]interface{})
-		if len(messArray) == 2 {
-			var sinfo = messArray[0].(map[string]interface{})
-			var pinfolist = messArray[1].(map[string]interface{})
-			if sinfo["CPUCount"] == nil {
-				var temp = sinfo
-				sinfo = pinfolist
-				pinfolist = temp
-			}
-			if sinfo["CPUCount"] != nil && pinfolist["Processes"] != nil {
-				var cpuCount = sinfo["CPUCount"]
-				var sysCpuUsage = sinfo["SystemCPUUsage"].(map[string]interface{})
-				var cpuTotalLoad = sysCpuUsage["CPU_TotalLoad"]
-				// 构建返回信息
-				infoCPU.CPUCount = int(cpuCount.(uint64))
-				infoCPU.SysCpuUsage = cpuTotalLoad.(float64)
-				//finalCpuInfo["attrCpuTotal"] = cpuTotalLoad
-
-				var cpuUsage = 0.0
-				pidMess := pinfolist["Processes"].(map[string]interface{})[pid]
-				if pidMess != nil {
-					processInfo := sysmonPorceAttrs(pidMess)
-					cpuUsage = processInfo["cpuUsage"].(float64)
-					infoCPU.CPUUsage = cpuUsage
-					infoCPU.Pid = pid
-					infoCPU.AttrCtxSwitch = uIntToInt64(processInfo["ctxSwitch"])
-					infoCPU.AttrIntWakeups = uIntToInt64(processInfo["intWakeups"])
-
-					infoMEM.Vss = uIntToInt64(processInfo["memVirtualSize"])
-					infoMEM.Rss = uIntToInt64(processInfo["memResidentSize"])
-					infoMEM.Anon = uIntToInt64(processInfo["memAnon"])
-					infoMEM.PhysMemory = uIntToInt64(processInfo["physFootprint"])
-
-				} else {
-					infoCPU.Mess = "invalid PID"
-					infoMEM.Mess = "invalid PID"
-
-					infoMEM.Vss = -1
-					infoMEM.Rss = -1
-					infoMEM.Anon = -1
-					infoMEM.PhysMemory = -1
-				}
-
-				infoMEM.TimeStamp = time.Now().UnixNano()
-				infoCPU.TimeStamp = time.Now().UnixNano()
-
-				_outMEM <- infoMEM
-				_outCPU <- infoCPU
-			}
-		}
-	}
-}
-
-// 获取进程相关信息
-func sysmonPorceAttrs(cpuMess interface{}) (outCpuInfo map[string]interface{}) {
-	if cpuMess == nil {
-		return nil
-	}
-	cpuMessArray, ok := cpuMess.([]interface{})
-	if !ok {
-		return nil
-	}
-	if len(cpuMessArray) != 8 {
-		return nil
-	}
-	if outCpuInfo == nil {
-		outCpuInfo = map[string]interface{}{}
-	}
-	// 虚拟内存
-	outCpuInfo["memVirtualSize"] = cpuMessArray[0]
-	// CPU
-	outCpuInfo["cpuUsage"] = cpuMessArray[1]
-	// 每秒进程的上下文切换次数
-	outCpuInfo["ctxSwitch"] = cpuMessArray[2]
-	// 每秒进程唤醒的线程数
-	outCpuInfo["intWakeups"] = cpuMessArray[3]
-	// 物理内存
-	outCpuInfo["physFootprint"] = cpuMessArray[4]
-
-	outCpuInfo["memResidentSize"] = cpuMessArray[5]
-	// 匿名内存
-	outCpuInfo["memAnon"] = cpuMessArray[6]
-
-	outCpuInfo["PID"] = cpuMessArray[7]
-	return
-}
-
-func (i *instruments) StopSysmontapServer() (err error) {
-	id, err := i.requestChannel("com.apple.instruments.server.services.sysmontap")
+	chanID, err := i.requestChannel(channel)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	selector := "stop"
+
 	args := libimobiledevice.NewAuxBuffer()
-	if _, err = i.client.Invoke(selector, args, id, true); err != nil {
-		return err
-	}
-	return nil
-}
-
-// todo 获取单进程流量情况，看情况做不做
-// 目前只获取到系统全局的流量情况，单进程需要用到set，go没有，并且实际用python测试单进程的流量情况不准
-func (i *instruments) StartNetWorkingServer(ctxParent context.Context) (chanNetWorking chan NetWorkingInfo, cancel context.CancelFunc, err error) {
-	var id uint32
-	if ctxParent == nil {
-		return nil, nil, fmt.Errorf("missing context")
-	}
-	ctx, cancelFunc := context.WithCancel(ctxParent)
-	_outNetWork := make(chan NetWorkingInfo)
-	if id, err = i.requestChannel("com.apple.instruments.server.services.networking"); err != nil {
-		return nil, cancelFunc, err
-	}
-	selector := "startMonitoring"
-	args := libimobiledevice.NewAuxBuffer()
-
-	if _, err = i.client.Invoke(selector, args, id, true); err != nil {
-		return nil, cancelFunc, err
-	}
-	i.registerCallback("", func(m libimobiledevice.DTXMessageResult) {
-		select {
-		case <-ctx.Done():
-			return
-		default:
-			receData, ok := m.Obj.([]interface{})
-			if ok && len(receData) == 2 {
-				sendAndReceiveData, ok := receData[1].([]interface{})
-				if ok {
-					var netData NetWorkingInfo
-					// 有时候是uint8，有时候是uint64。。。恶心
-					netData.RxBytes = uIntToInt64(sendAndReceiveData[0])
-					netData.RxPackets = uIntToInt64(sendAndReceiveData[1])
-					netData.TxBytes = uIntToInt64(sendAndReceiveData[2])
-					netData.TxPackets = uIntToInt64(sendAndReceiveData[3])
-					netData.TimeStamp = time.Now().UnixNano()
-					_outNetWork <- netData
-				}
-			}
+	for _, aux := range auxiliaries {
+		if err = args.AppendObject(aux); err != nil {
+			return nil, err
 		}
-	})
-	go func() {
-		i.registerCallback("_Golang-iDevice_Over", func(_ libimobiledevice.DTXMessageResult) {
-			cancelFunc()
-		})
-		select {
-		case <-ctx.Done():
-			_, isOpen := <-_outNetWork
-			if isOpen {
-				close(_outNetWork)
-			}
-		}
-		return
-	}()
-	return _outNetWork, cancelFunc, err
-}
-
-func uIntToInt64(num interface{}) (cnum int64) {
-	switch num.(type) {
-	case uint64:
-		return int64(num.(uint64))
-	case uint32:
-		return int64(num.(uint32))
-	case uint16:
-		return int64(num.(uint16))
-	case uint8:
-		return int64(num.(uint8))
-	case uint:
-		return int64(num.(uint))
 	}
-	return -1
+
+	return i.client.Invoke(selector, args, chanID, true)
 }
 
-func (i *instruments) StopNetWorkingServer() (err error) {
-	var id uint32
-	id, err = i.requestChannel("com.apple.instruments.server.services.networking")
+func (i *instruments) getPidByBundleID(bundleID string) (pid int, err error) {
+	apps, err := i.AppList()
 	if err != nil {
-		return err
-	}
-	selector := "stopMonitoring"
-	args := libimobiledevice.NewAuxBuffer()
-
-	if _, err = i.client.Invoke(selector, args, id, true); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (i *instruments) StartOpenglServer(ctxParent context.Context) (chanFPS chan FPSInfo, chanGPU chan GPUInfo, cancel context.CancelFunc, err error) {
-	var id uint32
-	if ctxParent == nil {
-		return nil, nil, nil, fmt.Errorf("missing context")
-	}
-	ctx, cancelFunc := context.WithCancel(ctxParent)
-	_outFPS := make(chan FPSInfo)
-	_outGPU := make(chan GPUInfo)
-	if id, err = i.requestChannel("com.apple.instruments.server.services.graphics.opengl"); err != nil {
-		return nil, nil, cancelFunc, err
+		fmt.Printf("get app list error: %v\n", err)
+		return 0, err
 	}
 
-	selector := "availableStatistics"
-	args := libimobiledevice.NewAuxBuffer()
-
-	if _, err = i.client.Invoke(selector, args, id, true); err != nil {
-		return nil, nil, cancelFunc, err
+	mapper := make(map[string]interface{})
+	for _, app := range apps {
+		mapper[app.ExecutableName] = app.CFBundleIdentifier
 	}
 
-	selector = "setSamplingRate:"
-	if err = args.AppendObject(0.0); err != nil {
-		return nil, nil, cancelFunc, err
-	}
-	if _, err = i.client.Invoke(selector, args, id, true); err != nil {
-		return nil, nil, cancelFunc, err
-	}
-
-	selector = "startSamplingAtTimeInterval:processIdentifier:"
-	args = libimobiledevice.NewAuxBuffer()
-	if err = args.AppendObject(0); err != nil {
-		return nil, nil, cancelFunc, err
-	}
-	if err = args.AppendObject(0); err != nil {
-		return nil, nil, cancelFunc, err
-	}
-	if _, err = i.client.Invoke(selector, args, id, true); err != nil {
-		return nil, nil, cancelFunc, err
-	}
-
-	i.registerCallback("", func(m libimobiledevice.DTXMessageResult) {
-		select {
-		case <-ctx.Done():
-			return
-		default:
-			mess := m.Obj
-			var deviceUtilization = mess.(map[string]interface{})["Device Utilization %"]     // Device Utilization
-			var tilerUtilization = mess.(map[string]interface{})["Tiler Utilization %"]       // Tiler Utilization
-			var rendererUtilization = mess.(map[string]interface{})["Renderer Utilization %"] // Renderer Utilization
-
-			var infoGPU GPUInfo
-
-			infoGPU.DeviceUtilization = uIntToInt64(deviceUtilization)
-			infoGPU.TilerUtilization = uIntToInt64(tilerUtilization)
-			infoGPU.RendererUtilization = uIntToInt64(rendererUtilization)
-			infoGPU.TimeStamp = time.Now().UnixNano()
-			_outGPU <- infoGPU
-
-			var infoFPS FPSInfo
-			var fps = mess.(map[string]interface{})["CoreAnimationFramesPerSecond"]
-			infoFPS.FPS = int(uIntToInt64(fps))
-			infoFPS.TimeStamp = time.Now().UnixNano()
-			_outFPS <- infoFPS
-		}
-	})
-	go func() {
-		i.registerCallback("_Golang-iDevice_Over", func(_ libimobiledevice.DTXMessageResult) {
-			cancelFunc()
-		})
-		select {
-		case <-ctx.Done():
-			var isOpen bool
-			if _outGPU != nil {
-				_, isOpen = <-_outGPU
-				if isOpen {
-					close(_outGPU)
-				}
-			}
-			if _outFPS != nil {
-				_, isOpen = <-_outFPS
-				if isOpen {
-					close(_outFPS)
-				}
-			}
-		}
-		return
-	}()
-	return _outFPS, _outGPU, cancelFunc, err
-}
-
-func (i *instruments) StopOpenglServer() (err error) {
-
-	id, err := i.requestChannel("com.apple.instruments.server.services.graphics.opengl")
+	processes, err := i.AppRunningProcesses()
 	if err != nil {
-		return err
+		fmt.Printf("get running app processes error: %v\n", err)
+		return 0, err
 	}
-	selector := "stop"
-	args := libimobiledevice.NewAuxBuffer()
+	for _, proc := range processes {
+		b, ok := mapper[proc.Name]
+		if ok && bundleID == b {
+			fmt.Printf("get pid %d by bundleId %s\n", proc.Pid, bundleID)
+			return proc.Pid, nil
+		}
+	}
 
-	if _, err = i.client.Invoke(selector, args, id, true); err != nil {
-		return err
-	}
-	return nil
+	fmt.Printf("can't find pid by bundleID: %s\n", bundleID)
+	return 0, fmt.Errorf("can't find pid by bundleID: %s", bundleID)
 }
 
 type Application struct {
