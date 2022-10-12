@@ -5,15 +5,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"path"
+	"strings"
+	"time"
+
 	"github.com/electricbubble/gidevice/pkg/ipa"
 	"github.com/electricbubble/gidevice/pkg/libimobiledevice"
 	"github.com/electricbubble/gidevice/pkg/nskeyedarchiver"
 	uuid "github.com/satori/go.uuid"
 	"howett.net/plist"
-	"os"
-	"path"
-	"strings"
-	"time"
 )
 
 const LockdownPort = 62078
@@ -47,6 +48,7 @@ type device struct {
 	crashReportMover  CrashReportMover
 	pcapd             Pcapd
 	webInspector      WebInspector
+	perfd             []Perfd
 }
 
 func (d *device) Properties() DeviceProperties {
@@ -315,14 +317,19 @@ func (d *device) InstallationProxyLookup(opts ...InstallationProxyOption) (looku
 	return d.installationProxy.Lookup(opts...)
 }
 
+func (d *device) newInstrumentsService() (instruments Instruments, err error) {
+	// NOTICE: each instruments service should have individual connection, otherwise it will be blocked
+	if _, err = d.lockdownService(); err != nil {
+		return
+	}
+	return d.lockdown.InstrumentsService()
+}
+
 func (d *device) instrumentsService() (instruments Instruments, err error) {
 	if d.instruments != nil {
 		return d.instruments, nil
 	}
-	if _, err = d.lockdownService(); err != nil {
-		return nil, err
-	}
-	if d.instruments, err = d.lockdown.InstrumentsService(); err != nil {
+	if d.instruments, err = d.newInstrumentsService(); err != nil {
 		return nil, err
 	}
 	instruments = d.instruments
@@ -605,131 +612,100 @@ func (d *device) MoveCrashReport(hostDir string, opts ...CrashReportMoverOption)
 	return d.crashReportMover.Move(hostDir, opts...)
 }
 
-func (d *device) GetPerfmon(opts *PerfmonOption) (out chan interface{}, outCancel context.CancelFunc, perfErr error) {
-	if d.lockdown == nil {
-		if _, err := d.lockdownService(); err != nil {
-			return nil, nil, err
-		}
-	}
-	if opts == nil {
-		return nil, nil, fmt.Errorf("parameter is empty")
-	}
-	if !opts.OpenChanCPU && !opts.OpenChanMEM && !opts.OpenChanGPU && !opts.OpenChanFPS && !opts.OpenChanNetWork {
-		opts.OpenChanCPU = true
-		opts.OpenChanMEM = true
-		opts.OpenChanGPU = true
-		opts.OpenChanFPS = true
-		opts.OpenChanNetWork = true
+func (d *device) PerfStart(opts ...PerfOption) (data <-chan []byte, err error) {
+	perfOptions := defaulPerfOption()
+	for _, fn := range opts {
+		fn(perfOptions)
 	}
 
-	var err error
-
-	var instruments Instruments
-	ctx, cancel := context.WithCancel(context.Background())
-
-	chanCPU := make(chan CPUInfo)
-	chanMEM := make(chan MEMInfo)
-	var cancelSysmontap context.CancelFunc
-
-	if opts.OpenChanCPU || opts.OpenChanMEM {
-		instruments, err = d.lockdown.InstrumentsService()
+	// wait until get pid for bundle id
+	if perfOptions.BundleID != "" {
+		instruments, err := d.newInstrumentsService()
 		if err != nil {
-			return nil, cancel, err
+			fmt.Printf("get pid by bundle id failed: %v\n", err)
+			os.Exit(1)
 		}
-		chanCPU, chanMEM, cancelSysmontap, err = instruments.StartSysmontapServer(opts.PID, ctx)
-		if err != nil {
-			cancelSysmontap()
-			return nil, cancel, err
-		}
-	}
 
-	chanFPS := make(chan FPSInfo)
-	chanGPU := make(chan GPUInfo)
-	var cancelOpengl context.CancelFunc
-
-	if opts.OpenChanGPU || opts.OpenChanFPS {
-		instruments, err = d.lockdown.InstrumentsService()
-		if err != nil {
-			return nil, cancel, err
-		}
-		chanFPS, chanGPU, cancelOpengl, err = instruments.StartOpenglServer(ctx)
-		if err != nil {
-			cancelOpengl()
-			return nil, cancel, err
-		}
-	}
-
-	chanNetWork := make(chan NetWorkingInfo)
-	var cancelNetWork context.CancelFunc
-	if opts.OpenChanNetWork {
-		instruments, err = d.lockdown.InstrumentsService()
-		if err != nil {
-			return nil, cancel, err
-		}
-		chanNetWork, cancelNetWork, err = instruments.StartNetWorkingServer(ctx)
-		if err != nil {
-			cancelNetWork()
-			return nil, cancel, err
-		}
-	}
-	// 弃用之前的PerfMonData ，统一汇总到interface里，由用户自行决定处理数据
-	result := make(chan interface{})
-	go func() {
 		for {
-			select {
-			case v, ok := <-chanCPU:
-				if opts.OpenChanCPU && ok {
-					result <- v
-				}
-			case v, ok := <-chanMEM:
-				if opts.OpenChanMEM && ok {
-					result <- v
-				}
-			case v, ok := <-chanFPS:
-				if opts.OpenChanFPS && ok {
-					result <- v
-				}
-			case v, ok := <-chanGPU:
-				if opts.OpenChanGPU && ok {
-					result <- v
-				}
-			case v, ok := <-chanNetWork:
-				if opts.OpenChanNetWork && ok {
-					result <- v
-				}
-			case <-ctx.Done():
-				err := d.stopPerfmon(opts)
-				if err != nil {
-					fmt.Println(err)
-				}
-				close(result)
-				return
+			pid, err := instruments.getPidByBundleID(perfOptions.BundleID)
+			if err != nil {
+				time.Sleep(1 * time.Second)
+				continue
 			}
+			perfOptions.Pid = pid
+			break
 		}
-	}()
-	return result, cancel, err
+	}
+
+	// processAttributes must contain pid, or it can't get process info, reason unknown
+	if !containString(perfOptions.ProcessAttributes, "pid") {
+		perfOptions.ProcessAttributes = append(perfOptions.ProcessAttributes, "pid")
+	}
+
+	outCh := make(chan []byte, 100)
+
+	if perfOptions.SysCPU || perfOptions.SysMem || perfOptions.SysDisk ||
+		perfOptions.SysNetwork {
+		perfd, err := d.newPerfdSysmontap(perfOptions)
+		if err != nil {
+			return nil, err
+		}
+		data, err := perfd.Start()
+		if err != nil {
+			return nil, err
+		}
+		go func() {
+			for {
+				outCh <- (<-data)
+			}
+		}()
+		d.perfd = append(d.perfd, perfd)
+	}
+
+	if perfOptions.Network {
+		perfd, err := d.newPerfdNetworking(perfOptions)
+		if err != nil {
+			return nil, err
+		}
+		data, err := perfd.Start()
+		if err != nil {
+			return nil, err
+		}
+		go func() {
+			for {
+				outCh <- (<-data)
+			}
+		}()
+		d.perfd = append(d.perfd, perfd)
+	}
+
+	if perfOptions.FPS || perfOptions.gpu {
+		perfd, err := d.newPerfdGraphicsOpengl(perfOptions)
+		if err != nil {
+			return nil, err
+		}
+		data, err := perfd.Start()
+		if err != nil {
+			return nil, err
+		}
+		go func() {
+			for {
+				outCh <- (<-data)
+			}
+		}()
+		d.perfd = append(d.perfd, perfd)
+	}
+
+	return outCh, nil
 }
 
-func (d *device) stopPerfmon(opts *PerfmonOption) (err error) {
-	if _, err = d.instrumentsService(); err != nil {
-		return err
+func (d *device) PerfStop() {
+	if d.perfd == nil {
+		return
 	}
-	if opts.OpenChanCPU || opts.OpenChanMEM {
-		if err = d.instruments.StopSysmontapServer(); err != nil {
-			return err
-		}
+	for _, p := range d.perfd {
+		p.Stop()
 	}
-	if opts.OpenChanGPU || opts.OpenChanFPS {
-		if err = d.instruments.StopOpenglServer(); err != nil {
-			return err
-		}
-	}
-	if opts.OpenChanNetWork {
-		if err = d.instruments.StopNetWorkingServer(); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func (d *device) XCTest(bundleID string, opts ...XCTestOption) (out <-chan string, cancel context.CancelFunc, err error) {
