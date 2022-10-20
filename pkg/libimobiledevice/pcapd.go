@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"time"
 
@@ -67,6 +68,10 @@ type IOSPacketHeader struct {
 	Unknown2       [8]byte `struc:"[8]byte"`
 }
 
+var (
+	PacketHeaderSize = uint32(95)
+)
+
 func (c *PcapdClient) GetPacket(buf []byte) ([]byte, error) {
 	iph := IOSPacketHeader{}
 	preader := bytes.NewReader(buf)
@@ -78,15 +83,24 @@ func (c *PcapdClient) GetPacket(buf []byte) ([]byte, error) {
 		}
 	}
 
-	packet, err := ioutil.ReadAll(preader)
+	// This code is from go-ios: https://github.com/danielpaulus/go-ios/blob/main/ios/pcap/pcap.go#164
+	if iph.HdrSize > PacketHeaderSize {
+		buf := make([]byte, iph.HdrSize-PacketHeaderSize)
+		_, err := io.ReadFull(preader, buf)
+		if err != nil {
+			return []byte{}, err
+		}
+	}
+
+	packet1, err := ioutil.ReadAll(preader)
 	if err != nil {
-		return packet, err
+		return packet1, err
 	}
 	if iph.FramePreLength == 0 {
 		ext := []byte{0xbe, 0xfe, 0xbe, 0xfe, 0xbe, 0xfe, 0xbe, 0xfe, 0xbe, 0xfe, 0xbe, 0xfe, 0x08, 0x00}
-		return append(ext, packet...), nil
+		return append(ext, packet1...), nil
 	}
-	return packet, nil
+	return packet1, nil
 }
 
 type PcaprecHdrS struct {

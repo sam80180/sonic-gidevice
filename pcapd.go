@@ -1,8 +1,6 @@
 package giDevice
 
 import (
-	"log"
-
 	"github.com/electricbubble/gidevice/pkg/libimobiledevice"
 )
 
@@ -38,12 +36,12 @@ func (c *pcapdClient) Packet() <-chan []byte {
 					close(packetCh)
 					return
 				}
-				res, err := c.c.CreatePacket(raw)
-				if err != nil {
-					log.Println("failed to create packet")
-					return
-				}
-				packetCh <- res
+				//res, err := c.c.CreatePacket(raw)
+				//if err != nil {
+				//	log.Println("failed to create packet")
+				//	return
+				//}
+				packetCh <- raw
 			}
 		}
 	}()
