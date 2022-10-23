@@ -4,7 +4,7 @@
 <p align="center">🎉Library of Communicate with iOS devices implemented with Golang</p>
 
 This repo was fork from [gidevice](https://github.com/electricbubble/gidevice).
-We will optimize and customize based on this, and we will also provide our pr to the original repo.
+We will optimize and customize based on this, and we will also provide our pr to the original repo by branch `feat/contribute_to_repo` after testing.
 
 ### Official Website
 [Sonic Official Website](https://sonic-cloud.gitee.io)
