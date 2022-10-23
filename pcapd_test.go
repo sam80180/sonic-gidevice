@@ -48,6 +48,7 @@ func GetNetworkIP() error {
 	}
 }
 
+// findIP @link https://github.com/danielpaulus/go-ios/blob/main/ios/pcap/ipfinder.go
 func findIP(p []byte, info *NetworkInfo) error {
 	packet := gopacket.NewPacket(p, layers.LayerTypeEthernet, gopacket.Default)
 	// Get the TCP layer from this packet
