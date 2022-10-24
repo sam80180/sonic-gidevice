@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/electricbubble/gidevice/pkg/libimobiledevice"
+	"github.com/SonicCloudOrg/sonic-gidevice/pkg/libimobiledevice"
 )
 
 type PerfOptions struct {

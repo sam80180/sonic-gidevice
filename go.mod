@@ -1,4 +1,4 @@
-module github.com/electricbubble/gidevice
+module github.com/SonicCloudOrg/sonic-gidevice
 
 go 1.16
 

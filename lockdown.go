@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/electricbubble/gidevice/pkg/libimobiledevice"
+	"github.com/SonicCloudOrg/sonic-gidevice/pkg/libimobiledevice"
 	uuid "github.com/satori/go.uuid"
 )
 

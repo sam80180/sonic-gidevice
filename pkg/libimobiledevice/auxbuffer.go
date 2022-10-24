@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"github.com/electricbubble/gidevice/pkg/nskeyedarchiver"
+	"github.com/SonicCloudOrg/sonic-gidevice/pkg/nskeyedarchiver"
 )
 
 type AuxBuffer struct {
