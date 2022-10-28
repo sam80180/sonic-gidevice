@@ -645,7 +645,7 @@ func (d *device) PerfStart(opts ...PerfOption) (data <-chan []byte, err error) {
 	outCh := make(chan []byte, 100)
 
 	if perfOptions.SysCPU || perfOptions.SysMem || perfOptions.SysDisk ||
-		perfOptions.SysNetwork {
+		perfOptions.SysNetwork || len(perfOptions.ProcessAttributes) >1 {
 		perfd, err := d.newPerfdSysmontap(perfOptions)
 		if err != nil {
 			return nil, err
