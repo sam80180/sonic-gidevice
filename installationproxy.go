@@ -2,7 +2,7 @@ package giDevice
 
 import (
 	"fmt"
-	"github.com/electricbubble/gidevice/pkg/libimobiledevice"
+	"github.com/SonicCloudOrg/sonic-gidevice/pkg/libimobiledevice"
 )
 
 var _ InstallationProxy = (*installationProxy)(nil)
