@@ -645,7 +645,39 @@ func (d *device) PerfStart(opts ...PerfOption) (data <-chan []byte, err error) {
 	outCh := make(chan []byte, 100)
 
 	if perfOptions.SysCPU || perfOptions.SysMem || perfOptions.SysDisk ||
-		perfOptions.SysNetwork {
+		perfOptions.SysNetwork || len(perfOptions.ProcessAttributes) > 1 {
+
+		sysCpuAndMemAttr := []string{
+			"vmCompressorPageCount",
+			"vmExtPageCount",
+			"vmFreeCount",
+			"vmIntPageCount",
+			"vmPurgeableCount",
+			"vmWireCount",
+			"vmUsedCount",
+			"__vmSwapUsage"}
+
+		if perfOptions.SysMem || perfOptions.SysCPU {
+			perfOptions.SystemAttributes = append(perfOptions.SystemAttributes, sysCpuAndMemAttr...)
+		}
+
+		if perfOptions.SysDisk {
+			diskAttr := []string{ // disk
+				"diskBytesRead",
+				"diskBytesWritten",
+				"diskReadOps",
+				"diskWriteOps"}
+			perfOptions.SystemAttributes = append(perfOptions.SystemAttributes, diskAttr...)
+		}
+
+		if perfOptions.SysNetwork {
+			networkAttr := []string{ // network
+				"netBytesIn",
+				"netBytesOut",
+				"netPacketsIn",
+				"netPacketsOut"}
+			perfOptions.SystemAttributes = append(perfOptions.SystemAttributes, networkAttr...)
+		}
 		perfd, err := d.newPerfdSysmontap(perfOptions)
 		if err != nil {
 			return nil, err

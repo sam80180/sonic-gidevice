@@ -32,6 +32,76 @@ func TestPerfSystemMonitor(t *testing.T) {
 	}
 }
 
+func TestPerfSystemCpu(t *testing.T) {
+	setupLockdownSrv(t)
+
+	data, err := dev.PerfStart(
+		WithPerfSystemCPU(true),
+		WithPerfOutputInterval(1000),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	timer := time.NewTimer(time.Duration(time.Second * 10))
+	for {
+		select {
+		case <-timer.C:
+			dev.PerfStop()
+			return
+		case d := <-data:
+			fmt.Println(string(d))
+		}
+	}
+}
+
+func TestPerfSystemMem(t *testing.T) {
+	setupLockdownSrv(t)
+
+	data, err := dev.PerfStart(
+		WithPerfSystemMem(true),
+		WithPerfOutputInterval(1000),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	timer := time.NewTimer(time.Duration(time.Second * 10))
+	for {
+		select {
+		case <-timer.C:
+			dev.PerfStop()
+			return
+		case d := <-data:
+			fmt.Println(string(d))
+		}
+	}
+}
+
+func TestPerfNotSystemPerfData(t *testing.T) {
+	setupLockdownSrv(t)
+
+	data, err := dev.PerfStart(
+		WithPerfSystemMem(false),
+		WithPerfSystemCPU(false),
+		WithPerfOutputInterval(1000),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	timer := time.NewTimer(time.Duration(time.Second * 10))
+	for {
+		select {
+		case <-timer.C:
+			dev.PerfStop()
+			return
+		case d := <-data:
+			fmt.Println(string(d))
+		}
+	}
+}
+
 func TestPerfProcessMonitor(t *testing.T) {
 	setupLockdownSrv(t)
 

@@ -32,36 +32,16 @@ type PerfOptions struct {
 
 func defaulPerfOption() *PerfOptions {
 	return &PerfOptions{
-		SysCPU:         true, // default on
-		SysMem:         true, // default on
-		SysDisk:        false,
-		SysNetwork:     false,
-		gpu:            false,
-		FPS:            false,
-		Network:        false,
-		OutputInterval: 1000, // default 1000ms
-		SystemAttributes: []string{
-			// disk
-			"diskBytesRead",
-			"diskBytesWritten",
-			"diskReadOps",
-			"diskWriteOps",
-			// memory
-			"vmCompressorPageCount",
-			"vmExtPageCount",
-			"vmFreeCount",
-			"vmIntPageCount",
-			"vmPurgeableCount",
-			"vmWireCount",
-			"vmUsedCount",
-			"__vmSwapUsage",
-			// network
-			"netBytesIn",
-			"netBytesOut",
-			"netPacketsIn",
-			"netPacketsOut",
-		},
-		ProcessAttributes: []string{
+		SysCPU:           false, // default on
+		SysMem:           false, // default on
+		SysDisk:          false,
+		SysNetwork:       false,
+		gpu:              false,
+		FPS:              false,
+		Network:          false,
+		OutputInterval:   1000, // default 1000ms
+		SystemAttributes: []string{},
+		ProcessAttributes: []string{ // default cpuUsage
 			"pid",
 			"cpuUsage",
 		},
