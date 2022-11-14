@@ -647,20 +647,6 @@ func (d *device) PerfStart(opts ...PerfOption) (data <-chan []byte, err error) {
 	if perfOptions.SysCPU || perfOptions.SysMem || perfOptions.SysDisk ||
 		perfOptions.SysNetwork || len(perfOptions.ProcessAttributes) > 1 {
 
-		sysCpuAndMemAttr := []string{
-			"vmCompressorPageCount",
-			"vmExtPageCount",
-			"vmFreeCount",
-			"vmIntPageCount",
-			"vmPurgeableCount",
-			"vmWireCount",
-			"vmUsedCount",
-			"__vmSwapUsage"}
-
-		if perfOptions.SysMem || perfOptions.SysCPU {
-			perfOptions.SystemAttributes = append(perfOptions.SystemAttributes, sysCpuAndMemAttr...)
-		}
-
 		if perfOptions.SysDisk {
 			diskAttr := []string{ // disk
 				"diskBytesRead",

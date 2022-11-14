@@ -106,6 +106,7 @@ func TestPerfProcessMonitor(t *testing.T) {
 	setupLockdownSrv(t)
 
 	data, err := dev.PerfStart(
+		WithPerfSystemCPU(true),
 		WithPerfProcessAttributes("cpuUsage", "memAnon"),
 		WithPerfOutputInterval(1000),
 		WithPerfPID(100),
@@ -210,6 +211,7 @@ func TestPerfAll(t *testing.T) {
 		WithPerfNetwork(true),
 		WithPerfFPS(true),
 		WithPerfGPU(true),
+		WithPerfProcessAttributes("cpuUsage", "memAnon"),
 		WithPerfBundleID("com.apple.mobilesafari"),
 	)
 	if err != nil {

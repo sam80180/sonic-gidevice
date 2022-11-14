@@ -32,18 +32,27 @@ type PerfOptions struct {
 
 func defaulPerfOption() *PerfOptions {
 	return &PerfOptions{
-		SysCPU:           false, // default on
-		SysMem:           false, // default on
-		SysDisk:          false,
-		SysNetwork:       false,
-		gpu:              false,
-		FPS:              false,
-		Network:          false,
-		OutputInterval:   1000, // default 1000ms
-		SystemAttributes: []string{},
+		SysCPU:         false, // default on
+		SysMem:         false, // default on
+		SysDisk:        false,
+		SysNetwork:     false,
+		gpu:            false,
+		FPS:            false,
+		Network:        false,
+		OutputInterval: 1000, // default 1000ms
+		SystemAttributes: []string{
+			"vmCompressorPageCount",
+			"vmExtPageCount",
+			"vmFreeCount",
+			"vmIntPageCount",
+			"vmPurgeableCount",
+			"vmWireCount",
+			"vmUsedCount",
+			"__vmSwapUsage",
+			"physMemSize"},
 		ProcessAttributes: []string{ // default cpuUsage
-			"pid",
-			"cpuUsage",
+			"memVirtualSize", "cpuUsage", "ctxSwitch", "intWakeups",
+			"physFootprint", "memResidentSize", "memAnon", "pid",
 		},
 	}
 }
@@ -199,6 +208,7 @@ func (c *perfdSysmontap) Start() (data <-chan []byte, err error) {
 
 			if c.options.Pid != 0 {
 				c.parseProcessData(dataArray)
+				c.parseSystemData(dataArray)
 			} else {
 				c.parseSystemData(dataArray)
 			}
@@ -308,13 +318,13 @@ func (c *perfdSysmontap) parseProcessData(dataArray []interface{}) {
 		processAttributesMap[value] = targetProcessValue[idx]
 	}
 	processData["proc_perf"] = processAttributesMap
-
-	systemAttributesValue := systemInfo["System"].([]interface{})
-	systemAttributesMap := make(map[string]int64)
-	for idx, value := range c.options.SystemAttributes {
-		systemAttributesMap[value] = convert2Int64(systemAttributesValue[idx])
-	}
-	processData["sys_perf"] = systemAttributesMap
+	//
+	//systemAttributesValue := systemInfo["System"].([]interface{})
+	//systemAttributesMap := make(map[string]int64)
+	//for idx, value := range c.options.SystemAttributes {
+	//	systemAttributesMap[value] = convert2Int64(systemAttributesValue[idx])
+	//}
+	//processData["sys_perf"] = systemAttributesMap
 }
 
 func (c *perfdSysmontap) parseSystemData(dataArray []interface{}) {
