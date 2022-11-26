@@ -156,6 +156,7 @@ type dtxMessagePacket struct {
 	Payload *dtxMessagePayloadPacket
 	Aux     []byte
 	Sel     []byte
+	Magic   []byte
 }
 
 func (p *dtxMessagePacket) Pack() ([]byte, error) {

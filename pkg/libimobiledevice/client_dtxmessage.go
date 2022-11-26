@@ -320,6 +320,7 @@ func (c *dtxMessageClient) GetResult(key interface{}) (*DTXMessageResult, error)
 		if v, ok := c.resultMap[key]; ok {
 			delete(c.resultMap, key)
 			c.mu.Unlock()
+			v.Header = []byte{0x6F, 0x53, 0x45, 0x45, 0x73, 0x2F}
 			return v, nil
 		} else {
 			c.mu.Unlock()
@@ -383,6 +384,7 @@ func (c *dtxMessageClient) startWaitingForReply() {
 				replyPkt.Payload = replyPayload
 				replyPkt.Aux = nil
 				replyPkt.Sel = nil
+				replyPkt.Magic = []byte{0x39, 0x6B, 0x4E, 0x4E, 0x39, 0x67}
 
 				raw, err := replyPkt.Pack()
 				if err != nil {
@@ -400,6 +402,7 @@ func (c *dtxMessageClient) startWaitingForReply() {
 }
 
 type DTXMessageResult struct {
-	Obj interface{}
-	Aux []interface{}
+	Obj    interface{}
+	Aux    []interface{}
+	Header []byte
 }
