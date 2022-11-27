@@ -1,10 +1,31 @@
+/*
+ *  sonic-gidevice  Connect to your iOS Devices.
+ *  Copyright (C) 2022 SonicCloudOrg
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
 package giDevice
 
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"errors"
 	"fmt"
+	"io"
+	"log"
+	"net"
 	"os"
 	"path"
 	"strings"
@@ -28,7 +49,40 @@ func newDevice(client *libimobiledevice.UsbmuxClient, properties DevicePropertie
 	}
 }
 
+func NewRemoteConnect(ip string, port int) *device {
+	client, err := libimobiledevice.NewUsbmuxClient(fmt.Sprintf("%s:%d", ip, port))
+	if err != nil {
+		log.Panic(err)
+	}
+
+	clientConnectInit(client.InnerConn())
+
+	devicePropertiesPacket, err := client.ReceivePacket()
+	if err != nil {
+		log.Panic(err)
+	}
+	var properties = &DeviceProperties{}
+	err = devicePropertiesPacket.Unmarshal(properties)
+	if err != nil {
+		log.Panic(err)
+	}
+	buffer := new(bytes.Buffer)
+	data, err1 := client.InnerConn().Read(4)
+	if err1 != nil {
+		log.Panic(err1)
+	}
+	buffer.Write(data)
+	var remoteLockdownPort uint32
+	if err = binary.Read(buffer, binary.LittleEndian, &remoteLockdownPort); err != nil {
+		log.Panic(err)
+	}
+	dev := newDevice(client, *properties)
+	dev.remoteAddr = fmt.Sprintf("%s:%d", ip, remoteLockdownPort)
+	return dev
+}
+
 type device struct {
+	remoteAddr     string
 	umClient       *libimobiledevice.UsbmuxClient
 	lockdownClient *libimobiledevice.LockdownClient
 
@@ -56,9 +110,14 @@ func (d *device) Properties() DeviceProperties {
 }
 
 func (d *device) NewConnect(port int, timeout ...time.Duration) (InnerConn, error) {
-	newClient, err := libimobiledevice.NewUsbmuxClient(timeout...)
+
+	newClient, err := libimobiledevice.NewUsbmuxClient(d.remoteAddr, timeout...)
 	if err != nil {
 		return nil, err
+	}
+
+	if d.remoteAddr != "" {
+		clientConnectInit(newClient.InnerConn())
 	}
 
 	var pkt libimobiledevice.Packet
@@ -379,6 +438,105 @@ func (d *device) testmanagerdService() (testmanagerd Testmanagerd, err error) {
 		return nil, err
 	}
 	return
+}
+
+func (d *device) Share(port int) error {
+
+	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	if err != nil {
+		return err
+	}
+	address, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:0", "0.0.0.0"))
+	if err != nil {
+		return err
+	}
+
+	lockdownLn, err := net.ListenTCP("tcp", address)
+	if err != nil {
+		return err
+	}
+	go func() {
+		err = d.shareBaseTcpServer(ln, lockdownLn.Addr().(*net.TCPAddr).Port)
+		if err != nil {
+			log.Panic(err)
+		}
+	}()
+
+	return d.shareServer(lockdownLn)
+}
+
+func (d *device) shareBaseTcpServer(ln net.Listener, serverPort int) error {
+	defer ln.Close()
+	for {
+		conn, err := ln.Accept()
+		if err != nil {
+			return err
+		}
+		remoteAddress := conn.RemoteAddr().String()
+		if debugFlag {
+			log.Printf("Incomming base request from: %v\n", remoteAddress)
+		}
+
+		var remoteUsb = libimobiledevice.NewRemoteUsbmuxConn(conn)
+		localUsb, err := libimobiledevice.NewUsbmuxClient("", 0)
+		if err != nil {
+			log.Panic(err)
+		}
+
+		if !serverCheckInit(remoteUsb.InnerConn()) {
+			continue
+		}
+
+		propertiesPacket, err := remoteUsb.NewPlistPacket(d.properties)
+		if err != nil {
+			log.Panic(err)
+		}
+		err = remoteUsb.SendPacket(propertiesPacket)
+		if err != nil {
+			log.Panic(err)
+		}
+
+		buf := new(bytes.Buffer)
+		b := make([]byte, 4)
+		binary.LittleEndian.PutUint32(b, uint32(serverPort))
+		buf.Write(b)
+		_, err = conn.Write(buf.Bytes())
+		if err != nil {
+			log.Panic(err)
+		}
+		forwardingData(conn, localUsb.RawConn())
+	}
+}
+
+func (d *device) shareServer(ln net.Listener) error {
+	defer ln.Close()
+	for {
+		conn, err := ln.Accept()
+		if err != nil {
+			return err
+		}
+		remoteAddress := conn.RemoteAddr().String()
+
+		var remoteUsb = libimobiledevice.NewRemoteUsbmuxConn(conn)
+
+		if !serverCheckInit(remoteUsb.InnerConn()) {
+			remoteUsb.Close()
+			continue
+		}
+
+		if debugFlag {
+			log.Printf("Incomming server request from: %v\n", remoteAddress)
+		}
+
+		newClient, err := libimobiledevice.NewUsbmuxClient("", 0)
+		if err != nil {
+			log.Panic(err)
+		}
+
+		rConn := newClient.RawConn()
+		rConn.SetDeadline(time.Time{})
+		forwardingData(conn, rConn)
+	}
 }
 
 func (d *device) AfcService() (afc Afc, err error) {
@@ -887,7 +1045,6 @@ func (d *device) XCTest(bundleID string, opts ...XCTestOption) (out <-chan strin
 		return _out, cancelFunc, err
 	}
 
-	// see https://github.com/SonicCloudOrg/sonic-gidevice/issues/31
 	// if err = d.instruments.startObserving(pid); err != nil {
 	// 	return _out, cancelFunc, err
 	// }
@@ -971,4 +1128,85 @@ func (d *device) _uploadXCTestConfiguration(bundleID string, sessionId uuid.UUID
 	}
 
 	return
+}
+
+func serverCheckInit(conn InnerConn) bool {
+	if !checkRecvMagic(conn, true) {
+		conn.Close()
+		return false
+	}
+
+	buf := new(bytes.Buffer)
+	b := make([]byte, 4)
+	binary.LittleEndian.PutUint32(b, uint32(5))
+	buf.Write(b)
+	buf.Write(checkMagic[6:])
+
+	err := conn.Write(buf.Bytes())
+	if err != nil {
+		log.Panic(err)
+	}
+	return true
+}
+
+func clientConnectInit(conn InnerConn) {
+	buf := new(bytes.Buffer)
+	b := make([]byte, 4)
+
+	binary.LittleEndian.PutUint32(b, uint32(6))
+	buf.Write(b)
+	buf.Write(checkMagic[:6])
+
+	err := conn.Write(buf.Bytes())
+	if err != nil {
+		log.Panic(err)
+	}
+	if !checkRecvMagic(conn, false) {
+		conn.Close()
+		log.Panic("connection failed non remote sib connection")
+	}
+}
+
+func forwardingData(lConn, rConn net.Conn) {
+	go func(lConn, rConn net.Conn) {
+		if _, err := io.Copy(lConn, rConn); err != nil {
+			lConn.Close()
+			rConn.Close()
+			if debugFlag {
+				log.Println(err)
+			}
+			return
+		}
+	}(lConn, rConn)
+	go func(lConn, rConn net.Conn) {
+		if _, err := io.Copy(rConn, lConn); err != nil {
+			lConn.Close()
+			rConn.Close()
+			if debugFlag {
+				log.Println(err)
+			}
+			return
+		}
+	}(lConn, rConn)
+}
+
+// the connection is of the specified type
+var checkMagic = [11]byte{0x61, 0x4F, 0x47, 0x32, 0x77, 0x6F, 0x53, 0x45, 0x45, 0x73, 0x2F}
+
+func checkRecvMagic(conn InnerConn, isPrefix bool) bool {
+	data, err := conn.Read(4)
+	if err != nil {
+		log.Panic(err)
+	}
+	data, err = conn.Read(int(binary.LittleEndian.Uint32(data)))
+	if err != nil {
+		log.Panic(err)
+	}
+	var subMagic []byte
+	if isPrefix {
+		subMagic = checkMagic[:6]
+	} else {
+		subMagic = checkMagic[6:]
+	}
+	return bytes.Equal(subMagic, data)
 }

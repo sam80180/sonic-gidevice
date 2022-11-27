@@ -2,6 +2,7 @@ package giDevice
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"testing"
@@ -170,5 +171,84 @@ func Test_device_InstallationProxyBrowse(t *testing.T) {
 
 	for _, l := range list {
 		t.Logf("%#v", l)
+	}
+}
+
+func Test_device_share(t *testing.T) {
+	setupDevice(t)
+	SetDebug(true, true)
+	err := dev.Share(9123)
+	if err != nil {
+		log.Panic(err)
+	}
+}
+
+func Test_device_connect(t *testing.T) {
+	SetDebug(true, true)
+	remoteDev := NewRemoteConnect("127.0.0.1", 9123)
+	data, err := remoteDev.GetValue("", "ProductVersion")
+	if err != nil {
+		log.Panic(err)
+	}
+	log.Println(data)
+}
+
+func TestMockPerfdUser1(t *testing.T) {
+	//SetDebug(true, true)
+	remoteDev := NewRemoteConnect("127.0.0.1", 9123)
+	data, err := remoteDev.PerfStart(
+		WithPerfSystemCPU(true),
+		WithPerfSystemMem(true),
+		WithPerfSystemDisk(true),
+		WithPerfSystemNetwork(true),
+		WithPerfNetwork(true),
+		WithPerfFPS(true),
+		WithPerfGPU(true),
+		//WithPerfProcessAttributes("cpuUsage", "memAnon"),
+		//WithPerfBundleID("com.apple.mobilesafari"),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	timer := time.NewTimer(time.Duration(time.Second * 20))
+	for {
+		select {
+		case <-timer.C:
+			dev.PerfStop()
+			return
+		case d := <-data:
+			fmt.Println(string(d))
+		}
+	}
+}
+
+func TestMockPerfdUser2(t *testing.T) {
+	//SetDebug(true, true)
+	remoteDev := NewRemoteConnect("127.0.0.1", 9123)
+	data, err := remoteDev.PerfStart(
+		WithPerfSystemCPU(true),
+		WithPerfSystemMem(true),
+		WithPerfSystemDisk(true),
+		WithPerfSystemNetwork(true),
+		WithPerfNetwork(true),
+		WithPerfFPS(true),
+		WithPerfGPU(true),
+		//WithPerfProcessAttributes("cpuUsage", "memAnon"),
+		//WithPerfBundleID("com.apple.mobilesafari"),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	timer := time.NewTimer(time.Duration(time.Second * 10))
+	for {
+		select {
+		case <-timer.C:
+			dev.PerfStop()
+			return
+		case d := <-data:
+			fmt.Println(string(d))
+		}
 	}
 }

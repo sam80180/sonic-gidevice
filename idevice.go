@@ -81,6 +81,8 @@ type Device interface {
 	PerfStop()
 
 	WebInspectorService() (webInspector WebInspector, err error)
+
+	Share(port int) error
 }
 
 type DeviceProperties = libimobiledevice.DeviceProperties
