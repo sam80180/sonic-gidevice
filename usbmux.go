@@ -9,7 +9,7 @@ import (
 var _ Usbmux = (*usbmux)(nil)
 
 func NewUsbmux() (Usbmux, error) {
-	umClient, err := libimobiledevice.NewUsbmuxClient()
+	umClient, err := libimobiledevice.NewUsbmuxClient("")
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +99,7 @@ func (um *usbmux) Listen(devNotifier chan Device) (context.CancelFunc, error) {
 				if baseDev.MessageType != libimobiledevice.MessageTypeDeviceAdd {
 					baseDev.Properties.DeviceID = baseDev.DeviceID
 				}
-				client, err := libimobiledevice.NewUsbmuxClient()
+				client, err := libimobiledevice.NewUsbmuxClient("")
 				if err != nil {
 					continue
 				}
