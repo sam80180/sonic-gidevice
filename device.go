@@ -1045,7 +1045,6 @@ func (d *device) XCTest(bundleID string, opts ...XCTestOption) (out <-chan strin
 		return _out, cancelFunc, err
 	}
 
-	// see https://github.com/SonicCloudOrg/sonic-gidevice/issues/31
 	// if err = d.instruments.startObserving(pid); err != nil {
 	// 	return _out, cancelFunc, err
 	// }
@@ -1191,7 +1190,6 @@ func forwardingData(lConn, rConn net.Conn) {
 	}(lConn, rConn)
 }
 
-// This is a meaningless bytes, which is only used to verify whether
 // the connection is of the specified type
 var checkMagic = [11]byte{0x61, 0x4F, 0x47, 0x32, 0x77, 0x6F, 0x53, 0x45, 0x45, 0x73, 0x2F}
 

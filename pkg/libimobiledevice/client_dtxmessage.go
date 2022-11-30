@@ -179,7 +179,6 @@ func (c *dtxMessageClient) ReceiveDTXMessage() (result *DTXMessageResult, err er
 
 	var aux, obj []byte
 
-	// see https://github.com/SonicCloudOrg/sonic-gidevice/issues/28
 	if r, l := payloadSize+payload.AuxiliaryLength, len(rawPayload); int(r) <= l {
 		aux = rawPayload[payloadSize:r]
 	} else {
