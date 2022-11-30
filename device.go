@@ -49,8 +49,8 @@ func newDevice(client *libimobiledevice.UsbmuxClient, properties DevicePropertie
 	}
 }
 
-func NewRemoteConnect(ip string, port int) *device {
-	client, err := libimobiledevice.NewUsbmuxClient(fmt.Sprintf("%s:%d", ip, port))
+func NewRemoteConnect(ip string, port int, timeout int) *device {
+	client, err := libimobiledevice.NewUsbmuxClient(fmt.Sprintf("%s:%d", ip, port), time.Duration(timeout)*time.Second)
 	if err != nil {
 		log.Panic(err)
 	}
