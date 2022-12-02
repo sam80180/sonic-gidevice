@@ -49,36 +49,36 @@ func newDevice(client *libimobiledevice.UsbmuxClient, properties DevicePropertie
 	}
 }
 
-func NewRemoteConnect(ip string, port int, timeout int) *device {
+func NewRemoteConnect(ip string, port int, timeout int) (*device, error) {
 	client, err := libimobiledevice.NewUsbmuxClient(fmt.Sprintf("%s:%d", ip, port), time.Duration(timeout)*time.Second)
 	if err != nil {
-		log.Panic(err)
+		return nil, err
 	}
 
 	clientConnectInit(client.InnerConn())
 
 	devicePropertiesPacket, err := client.ReceivePacket()
 	if err != nil {
-		log.Panic(err)
+		return nil, err
 	}
 	var properties = &DeviceProperties{}
 	err = devicePropertiesPacket.Unmarshal(properties)
 	if err != nil {
-		log.Panic(err)
+		return nil, err
 	}
 	buffer := new(bytes.Buffer)
 	data, err1 := client.InnerConn().Read(4)
 	if err1 != nil {
-		log.Panic(err1)
+		return nil, err
 	}
 	buffer.Write(data)
 	var remoteLockdownPort uint32
 	if err = binary.Read(buffer, binary.LittleEndian, &remoteLockdownPort); err != nil {
-		log.Panic(err)
+		return nil, err
 	}
 	dev := newDevice(client, *properties)
 	dev.remoteAddr = fmt.Sprintf("%s:%d", ip, remoteLockdownPort)
-	return dev
+	return dev, nil
 }
 
 type device struct {

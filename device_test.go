@@ -185,7 +185,7 @@ func Test_device_share(t *testing.T) {
 
 func Test_device_connect(t *testing.T) {
 	SetDebug(true, true)
-	remoteDev := NewRemoteConnect("127.0.0.1", 9123, 30)
+	remoteDev, _ := NewRemoteConnect("127.0.0.1", 9123, 30)
 	data, err := remoteDev.GetValue("", "ProductVersion")
 	if err != nil {
 		log.Panic(err)
@@ -195,7 +195,7 @@ func Test_device_connect(t *testing.T) {
 
 func TestMockPerfdUser1(t *testing.T) {
 	//SetDebug(true, true)
-	remoteDev := NewRemoteConnect("127.0.0.1", 9123, 30)
+	remoteDev, _ := NewRemoteConnect("127.0.0.1", 9123, 30)
 	data, err := remoteDev.PerfStart(
 		WithPerfSystemCPU(true),
 		WithPerfSystemMem(true),
@@ -225,7 +225,7 @@ func TestMockPerfdUser1(t *testing.T) {
 
 func TestMockPerfdUser2(t *testing.T) {
 	//SetDebug(true, true)
-	remoteDev := NewRemoteConnect("127.0.0.1", 9123, 30)
+	remoteDev, _ := NewRemoteConnect("127.0.0.1", 9123, 30)
 	data, err := remoteDev.PerfStart(
 		WithPerfSystemCPU(true),
 		WithPerfSystemMem(true),
