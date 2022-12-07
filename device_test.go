@@ -155,6 +155,15 @@ func Test_device_Shutdown(t *testing.T) {
 	dev.Shutdown()
 }
 
+func Test_device_PowerInfo(t *testing.T) {
+	setupDevice(t)
+	data, err := dev.PowerSource()
+	if err != nil {
+		panic(err)
+	}
+	log.Println(data)
+}
+
 func Test_device_InstallationProxyBrowse(t *testing.T) {
 	setupDevice(t)
 

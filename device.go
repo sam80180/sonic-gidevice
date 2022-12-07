@@ -657,6 +657,19 @@ func (d *device) Reboot() (err error) {
 	return
 }
 
+func (d *device) PowerSource() (powerInfo interface{}, err error) {
+	if _, err = d.lockdownService(); err != nil {
+		return
+	}
+	if d.diagnosticsRelay, err = d.lockdown.DiagnosticsRelayService(); err != nil {
+		return
+	}
+	if powerInfo, err = d.diagnosticsRelay.PowerSource(); err != nil {
+		return
+	}
+	return
+}
+
 func (d *device) Shutdown() (err error) {
 	if _, err = d.lockdownService(); err != nil {
 		return
