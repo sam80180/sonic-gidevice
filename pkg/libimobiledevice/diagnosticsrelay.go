@@ -5,8 +5,9 @@ const (
 )
 
 type DiagnosticsRelayBasicRequest struct {
-	Request string `plist:"Request"`
-	Label   string `plist:"Label"`
+	Request    string  `plist:"Request"`
+	Label      string  `plist:"Label"`
+	EntryClass *string `plist:"EntryClass,omitempty"`
 }
 
 func NewDiagnosticsRelayClient(innerConn InnerConn) *DiagnosticsRelayClient {
@@ -23,10 +24,11 @@ func (c *DiagnosticsRelayClient) InnerConn() InnerConn {
 	return c.client.innerConn
 }
 
-func (c *DiagnosticsRelayClient) NewBasicRequest(relayType string) *DiagnosticsRelayBasicRequest {
+func (c *DiagnosticsRelayClient) NewBasicRequest(relayType string, entryClass *string) *DiagnosticsRelayBasicRequest {
 	return &DiagnosticsRelayBasicRequest{
-		Request: relayType,
-		Label:   BundleID,
+		Request:    relayType,
+		Label:      BundleID,
+		EntryClass: entryClass,
 	}
 }
 

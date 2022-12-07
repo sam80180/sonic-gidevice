@@ -67,7 +67,7 @@ type Device interface {
 
 	Reboot() error
 	Shutdown() error
-	PowerSource() (powerInfo interface{}, err error)
+	PowerSource() (powerInfo map[string]interface{}, err error)
 
 	crashReportMoverService() (crashReportMover CrashReportMover, err error)
 	MoveCrashReport(hostDir string, opts ...CrashReportMoverOption) (err error)
@@ -235,7 +235,7 @@ type Perfd interface {
 type DiagnosticsRelay interface {
 	Reboot() error
 	Shutdown() error
-	PowerSource() (powerInfo interface{}, err error)
+	PowerSource() (powerInfo map[string]interface{}, err error)
 }
 
 type WebInspector interface {

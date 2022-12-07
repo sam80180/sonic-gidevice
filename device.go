@@ -657,7 +657,7 @@ func (d *device) Reboot() (err error) {
 	return
 }
 
-func (d *device) PowerSource() (powerInfo interface{}, err error) {
+func (d *device) PowerSource() (powerInfo map[string]interface{}, err error) {
 	if _, err = d.lockdownService(); err != nil {
 		return
 	}
