@@ -635,10 +635,10 @@ func (c *perfdNetworking) parseNetworking(data interface{}) {
 				Type:      "network-connection-update",
 				TimeStamp: time.Now().Unix(),
 			},
-			RxBytes:   convert2Int64(msgValue[0]),
-			RxPackets: convert2Int64(msgValue[1]),
-			TxBytes:   convert2Int64(msgValue[2]),
-			TxPackets: convert2Int64(msgValue[3]),
+			RxPackets: convert2Int64(msgValue[0]),
+			RxBytes:   convert2Int64(msgValue[1]),
+			TxPackets: convert2Int64(msgValue[2]),
+			TxBytes:   convert2Int64(msgValue[3]),
 		}
 		if value, ok := msgValue[4].(uint64); ok {
 			netData.RxDups = int64(value)
