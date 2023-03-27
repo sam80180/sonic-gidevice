@@ -750,7 +750,7 @@ func (c *perfdGraphicsOpengl) Start() (data <-chan []byte, err error) {
 	if _, err = c.i.call(
 		instrumentsServiceGraphicsOpengl,
 		"setSamplingRate:",
-		float64(c.options.OutputInterval)/100,
+		c.options.OutputInterval/100,
 	); err != nil {
 		return nil, err
 	}
