@@ -353,7 +353,7 @@ func (c *perfdSysmontap) parseSystemData(dataArray []interface{}) {
 	var dataTime uint64 = 0
 	for _, value := range dataArray {
 		t, ok := value.(map[string]interface{})
-		if ok && t["SystemCPUUsage"] != nil && t["EndMachAbsTime"].(uint64) > dataTime {
+		if ok && t["SystemCPUUsage"] != nil && t["EndMachAbsTime"]!=nil && t["EndMachAbsTime"].(uint64) > dataTime {
 			systemInfo = t
 			dataTime = t["EndMachAbsTime"].(uint64)
 		}
