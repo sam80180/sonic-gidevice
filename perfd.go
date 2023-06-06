@@ -219,7 +219,7 @@ func (c *perfdSysmontap) Start() (data <-chan []byte, err error) {
 			return
 		default:
 			dataArray, ok := m.Obj.([]interface{})
-			if !ok || len(dataArray) != 2 {
+			if !ok || len(dataArray) < 2 {
 				return
 			}
 
@@ -273,32 +273,34 @@ func (c *perfdSysmontap) Stop() {
 }
 
 func (c *perfdSysmontap) parseProcessData(dataArray []interface{}) {
-	// dataArray example:
-	// [
-	//   map[
-	//     CPUCount:2
-	//     EnabledCPUs:2
-	//     PerCPUUsage:[
-	//       map[CPU_NiceLoad:0 CPU_SystemLoad:-1 CPU_TotalLoad:3.6363636363636402 CPU_UserLoad:-1]
-	//       map[CPU_NiceLoad:0 CPU_SystemLoad:-1 CPU_TotalLoad:2.7272727272727195 CPU_UserLoad:-1]
-	//     ]
-	//     System:[36408520704 6897049600 3031160 773697 15596 61940 1297 26942 588 17020 127346 1835008 119718056 107009899 174046 103548]
-	//     SystemCPUUsage:map[CPU_NiceLoad:0 CPU_SystemLoad:-1 CPU_TotalLoad:6.36363636363636 CPU_UserLoad:-1]
-	//     StartMachAbsTime:5896602132889
-	//     EndMachAbsTime:5896628486761
-	//     Type:41
-	//  ]
-	//  map[
-	//    Processes:map[
-	//      0:[1.3582834340402803 0]
-	//      124:[0.011456702068519481 124]
-	//      136:[0.05468332721703649 136]
-	//    ]
-	//    StartMachAbsTime:5896602295095
-	//    EndMachAbsTime:5896628780514
-	//    Type:5
-	//   ]
-	// ]
+	/**
+	dataArray example:
+	[
+	  map[
+	    CPUCount:2
+	    EnabledCPUs:2
+	    PerCPUUsage:[
+	      map[CPU_NiceLoad:0 CPU_SystemLoad:-1 CPU_TotalLoad:3.6363636363636402 CPU_UserLoad:-1]
+	      map[CPU_NiceLoad:0 CPU_SystemLoad:-1 CPU_TotalLoad:2.7272727272727195 CPU_UserLoad:-1]
+	    ]
+	    System:[36408520704 6897049600 3031160 773697 15596 61940 1297 26942 588 17020 127346 1835008 119718056 107009899 174046 103548]
+	    SystemCPUUsage:map[CPU_NiceLoad:0 CPU_SystemLoad:-1 CPU_TotalLoad:6.36363636363636 CPU_UserLoad:-1]
+	    StartMachAbsTime:5896602132889
+	    EndMachAbsTime:5896628486761
+	    Type:41
+	 ]
+	 map[
+	   Processes:map[
+	     0:[1.3582834340402803 0]
+	     124:[0.011456702068519481 124]
+	     136:[0.05468332721703649 136]
+	   ]
+	   StartMachAbsTime:5896602295095
+	   EndMachAbsTime:5896628780514
+	   Type:5
+	  ]
+	]
+	*/
 
 	processData := make(map[string]interface{})
 	processData["type"] = "process"
@@ -347,33 +349,37 @@ func (c *perfdSysmontap) parseProcessData(dataArray []interface{}) {
 func (c *perfdSysmontap) parseSystemData(dataArray []interface{}) {
 	timestamp := time.Now().Unix()
 	var systemInfo map[string]interface{}
-	data1 := dataArray[0].(map[string]interface{})
-	data2 := dataArray[1].(map[string]interface{})
-	if _, ok := data1["SystemCPUUsage"]; ok {
-		systemInfo = data1
-	} else {
-		systemInfo = data2
+
+	var dataTime uint64 = 0
+	for _, value := range dataArray {
+		t, ok := value.(map[string]interface{})
+		if ok && t["SystemCPUUsage"] != nil && t["EndMachAbsTime"].(uint64) > dataTime {
+			systemInfo = t
+			dataTime = t["EndMachAbsTime"].(uint64)
+		}
 	}
 
-	// systemInfo example:
-	// map[
-	//   CPUCount:2
-	//   EnabledCPUs:2
-	//   PerCPUUsage:[
-	//     map[CPU_NiceLoad:0 CPU_SystemLoad:-1 CPU_TotalLoad:3.9215686274509807 CPU_UserLoad:-1]
-	//     map[CPU_NiceLoad:0 CPU_SystemLoad:-1 CPU_TotalLoad:11.650485436893206 CPU_UserLoad:-1]]
-	//   ]
-	//   System:[704211 35486281728 6303789056 3001119 1001 11033 52668 1740 40022 2114 17310 126903 1835008 160323 107909856 95067 95808179]
-	//   SystemCPUUsage:map[
-	//     CPU_NiceLoad:0
-	//     CPU_SystemLoad:-1
-	//     CPU_TotalLoad:15.572054064344186
-	//     CPU_UserLoad:-1
-	//   ]
-	//   StartMachAbsTime:5339240248449
-	//   EndMachAbsTime:5339264441260
-	//   Type:41
-	// ]
+	/**
+	systemInfo example:
+	map[
+	  CPUCount:2
+	  EnabledCPUs:2
+	  PerCPUUsage:[
+	    map[CPU_NiceLoad:0 CPU_SystemLoad:-1 CPU_TotalLoad:3.9215686274509807 CPU_UserLoad:-1]
+	    map[CPU_NiceLoad:0 CPU_SystemLoad:-1 CPU_TotalLoad:11.650485436893206 CPU_UserLoad:-1]]
+	  ]
+	  System:[704211 35486281728 6303789056 3001119 1001 11033 52668 1740 40022 2114 17310 126903 1835008 160323 107909856 95067 95808179]
+	  SystemCPUUsage:map[
+	    CPU_NiceLoad:0
+	    CPU_SystemLoad:-1
+	    CPU_TotalLoad:15.572054064344186
+	    CPU_UserLoad:-1
+	  ]
+	  StartMachAbsTime:5339240248449
+	  EndMachAbsTime:5339264441260
+	  Type:41
+	]
+	*/
 
 	if c.options.SysCPU {
 		sysCPUUsage := systemInfo["SystemCPUUsage"].(map[string]interface{})
