@@ -28,14 +28,15 @@ func (d *xcTestManagerDaemon) initiateControlSession(XcodeVersion uint64) (err e
 
 	selector := "_IDE_initiateControlSessionWithProtocolVersion:"
 
-	var ret *libimobiledevice.DTXMessageResult
-	if ret, err = d.testmanagerd.invoke(selector, args, d.channelCode, true); err != nil {
+	var _ *libimobiledevice.DTXMessageResult
+	if _, err = d.testmanagerd.invoke(selector, args, d.channelCode, true); err != nil {
 		return err
 	}
 
-	if nsErr, ok := ret.Obj.(libimobiledevice.NSError); ok {
-		return fmt.Errorf("%s", nsErr.NSUserInfo.(map[string]interface{})["NSLocalizedDescription"])
-	}
+	// Some device should ignore it.
+	// if nsErr, ok := ret.Obj.(libimobiledevice.NSError); ok {
+	// 	return fmt.Errorf("%s", nsErr.NSUserInfo.(map[string]interface{})["NSLocalizedDescription"])
+	// }
 	return
 }
 
