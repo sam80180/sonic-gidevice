@@ -95,6 +95,7 @@ type device struct {
 	installationProxy InstallationProxy
 	instruments       Instruments
 	afc               Afc
+	amfi              Amfi
 	houseArrest       HouseArrest
 	syslogRelay       SyslogRelay
 	diagnosticsRelay  DiagnosticsRelay
@@ -537,6 +538,20 @@ func (d *device) shareServer(ln net.Listener) error {
 		rConn.SetDeadline(time.Time{})
 		forwardingData(conn, rConn)
 	}
+}
+
+func (d *device) AmfiService() (amfi Amfi, err error) {
+	if d.amfi != nil {
+		return d.amfi, nil
+	}
+	if _, err = d.lockdownService(); err != nil {
+		return nil, err
+	}
+	if d.amfi, err = d.lockdown.AmfiService(); err != nil {
+		return nil, err
+	}
+	amfi = d.amfi
+	return amfi, nil
 }
 
 func (d *device) AfcService() (afc Afc, err error) {
