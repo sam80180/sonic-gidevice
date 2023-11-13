@@ -418,6 +418,16 @@ func (c *lockdown) TestmanagerdService() (testmanagerd Testmanagerd, err error) 
 	return
 }
 
+func (c *lockdown) AmfiService() (amfi Amfi, err error) {
+	var innerConn InnerConn
+	if innerConn, err = c._startService(libimobiledevice.AmfiServiceName, nil); err != nil {
+		return nil, err
+	}
+	amfiClient := libimobiledevice.NewAmfiClient(innerConn)
+	amfi = newAmfi(amfiClient)
+	return amfi, nil
+}
+
 func (c *lockdown) AfcService() (afc Afc, err error) {
 	var innerConn InnerConn
 	if innerConn, err = c._startService(libimobiledevice.AfcServiceName, nil); err != nil {

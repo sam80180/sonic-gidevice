@@ -50,7 +50,7 @@ type Device interface {
 	AppRunningProcesses() (processes []Process, err error)
 	AppList(opts ...AppListOption) (apps []Application, err error)
 	DeviceInfo() (devInfo *DeviceInfo, err error)
-
+	AmfiService() (Amfi, error)
 	AfcService() (afc Afc, err error)
 	AppInstall(ipaPath string) (err error)
 	AppUninstall(bundleID string) (err error)
@@ -174,6 +174,12 @@ type Testmanagerd interface {
 
 	registerCallback(obj string, cb func(m libimobiledevice.DTXMessageResult))
 	close()
+}
+
+type Amfi interface {
+	DevModeReveal() (int, error)
+	DevModeArm() (int, error)
+	DevModeEnable() (int, error)
 }
 
 type Afc interface {
