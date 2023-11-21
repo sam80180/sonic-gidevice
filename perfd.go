@@ -353,7 +353,7 @@ func (c *perfdSysmontap) parseSystemData(dataArray []interface{}) {
 	var dataTime uint64 = 0
 	for _, value := range dataArray {
 		t, ok := value.(map[string]interface{})
-		if ok && t["SystemCPUUsage"] != nil && t["EndMachAbsTime"]!=nil && t["EndMachAbsTime"].(uint64) > dataTime {
+		if ok && t["SystemCPUUsage"] != nil && t["EndMachAbsTime"] != nil && t["EndMachAbsTime"].(uint64) > dataTime {
 			systemInfo = t
 			dataTime = t["EndMachAbsTime"].(uint64)
 		}
@@ -404,9 +404,10 @@ func (c *perfdSysmontap) parseSystemData(dataArray []interface{}) {
 	}
 
 	if c.options.SysMem {
-		kernelPageSize := int64(1) // why 16384 ?
+		kernelPageSize := int64(16384) // core_profile_session_tap get kernel_page_size
+		// kernelPageSize := int64(1) // why 16384 ?
 		appMemory := (systemAttributesMap["vmIntPageCount"] - systemAttributesMap["vmPurgeableCount"]) * kernelPageSize
-		cachedFiles := (systemAttributesMap["vmExtPageCount"] - systemAttributesMap["vmPurgeableCount"]) * kernelPageSize
+		cachedFiles := (systemAttributesMap["vmExtPageCount"] + systemAttributesMap["vmPurgeableCount"]) * kernelPageSize
 		compressed := systemAttributesMap["vmCompressorPageCount"] * kernelPageSize
 		usedMemory := (systemAttributesMap["vmUsedCount"] - systemAttributesMap["vmExtPageCount"]) * kernelPageSize
 		wiredMemory := systemAttributesMap["vmWireCount"] * kernelPageSize
