@@ -1052,7 +1052,7 @@ func (d *device) XCTest(bundleID string, opts ...XCTestOption) (out <-chan strin
 	}
 
 	if len(xcTestOpt.appOpt) != 0 {
-		for k, v := range xcTestOpt.appEnv {
+		for k, v := range xcTestOpt.appOpt {
 			appOpt[k] = v
 		}
 	}
