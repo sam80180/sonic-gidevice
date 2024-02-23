@@ -921,7 +921,7 @@ func (d *device) XCTest(bundleID string, opts ...XCTestOption) (out <-chan strin
 	ctx, cancelFunc := context.WithCancel(context.TODO())
 	_out := make(chan string)
 
-	xcodeVersion := uint64(30)
+	xcodeVersion := uint64(29)
 
 	var tmSrv1 Testmanagerd
 	if tmSrv1, err = d.testmanagerdService(); err != nil {
@@ -1018,6 +1018,7 @@ func (d *device) XCTest(bundleID string, opts ...XCTestOption) (out <-chan strin
 		"CA_DEBUG_TRANSACTIONS":              "0",
 		"DYLD_FRAMEWORK_PATH":                appPath + "/Frameworks:",
 		"DYLD_LIBRARY_PATH":                  appPath + "/Frameworks",
+		'MTC_CRASH_ON_REPORT':                '1',
 		"NSUnbufferedIO":                     "YES",
 		"SQLITE_ENABLE_THREAD_ASSERTIONS":    "1",
 		"WDA_PRODUCT_BUNDLE_IDENTIFIER":      "",
