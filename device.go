@@ -957,7 +957,7 @@ func (d *device) XCTest(bundleID string, opts ...XCTestOption) (out <-chan strin
 	xcTestManager2.registerCallback("_XCT_logDebugMessage:", func(m libimobiledevice.DTXMessageResult) {
 		// more information ( each operation )
 		// fmt.Println("###### xcTestManager2 ### -->", m)
-		if strings.Contains(fmt.Sprintf("%s", m), "Received test runner ready reply with error: (null)") {
+		if strings.Contains(fmt.Sprintf("%s", m), "(null)") {
 			// fmt.Println("###### xcTestManager2 ### -->", fmt.Sprintf("%v", m.Aux[0]))
 			time.Sleep(time.Second)
 			if err = xcTestManager2.startExecutingTestPlan(xcodeVersion); err != nil {
