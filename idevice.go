@@ -8,6 +8,7 @@ import (
 
 	"github.com/SonicCloudOrg/sonic-gidevice/pkg/libimobiledevice"
 	"github.com/SonicCloudOrg/sonic-gidevice/pkg/nskeyedarchiver"
+	"github.com/sam80180/mobileprovision"
 )
 
 type Usbmux interface {
@@ -56,7 +57,7 @@ type Device interface {
 	AppUninstall(bundleID string) (err error)
 
 	HouseArrestService() (houseArrest HouseArrest, err error)
-
+	MisagentService() (Misagent, error)
 	syslogRelayService() (syslogRelay SyslogRelay, err error)
 	Syslog() (lines <-chan string, err error)
 	SyslogStop()
@@ -206,6 +207,16 @@ type HouseArrest interface {
 	Documents(bundleID string) (afc Afc, err error)
 	Container(bundleID string) (afc Afc, err error)
 }
+
+type Misagent interface {
+	ListProvisionProfiles() ([]*mobileprovision.ProvisioningProfile, error)
+	GetProvisionProfile(string) (*mobileprovision.ProvisioningProfile, error)
+	CopyProvisionProfile(string, int) ([]byte, error)
+	CopyAllProvisionProfiles(string, int) (*libimobiledevice.ProvisionProfileOperationResults, error)
+	RemoveProvisionProfile(string) error
+	RemoveAllProvisionProfiles() (*libimobiledevice.ProvisionProfileOperationResults, error)
+	InstallProvisionProfile([]byte) error
+}     
 
 type XCTestManagerDaemon interface {
 	// initiateControlSession iOS 11+

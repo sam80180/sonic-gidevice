@@ -3,9 +3,10 @@ package giDevice
 import (
 	"bufio"
 	"fmt"
-	"github.com/SonicCloudOrg/sonic-gidevice/pkg/libimobiledevice"
 	"io"
 	"strings"
+
+	"github.com/SonicCloudOrg/sonic-gidevice/pkg/libimobiledevice"
 )
 
 var _ SyslogRelay = (*syslogRelay)(nil)

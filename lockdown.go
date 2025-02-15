@@ -448,6 +448,15 @@ func (c *lockdown) HouseArrestService() (houseArrest HouseArrest, err error) {
 	return
 }
 
+func (c *lockdown) MisagentService(v string) (Misagent, error) {
+	if innerConn, err := c._startService(libimobiledevice.MisagentServiceName, nil); err != nil {
+		return nil, err
+	} else {
+		misagentClient := libimobiledevice.NewMisagentClient(innerConn, v)
+		return newMisagent(misagentClient), nil
+	}     
+}
+
 func (c *lockdown) SyslogRelayService() (syslogRelay SyslogRelay, err error) {
 	var innerConn InnerConn
 	if innerConn, err = c._startService(libimobiledevice.SyslogRelayServiceName, nil); err != nil {

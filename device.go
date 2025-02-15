@@ -97,6 +97,7 @@ type device struct {
 	afc               Afc
 	amfi              Amfi
 	houseArrest       HouseArrest
+	misagent          Misagent
 	syslogRelay       SyslogRelay
 	diagnosticsRelay  DiagnosticsRelay
 	springBoard       SpringBoard
@@ -631,6 +632,28 @@ func (d *device) HouseArrestService() (houseArrest HouseArrest, err error) {
 	return
 }
 
+func (d *device) MisagentService() (Misagent, error) {
+	if d.misagent != nil {
+		return d.misagent, nil
+	}     
+	if _, err := d.lockdownService(); err != nil {
+		return nil, err
+	}     
+	strProductVersion := ""
+	if varProductVersion, errPV := d.GetValue("", "ProductVersion"); errPV == nil {
+		switch varProductVersion.(type) {
+		case string:
+			strProductVersion = varProductVersion.(string)
+		}     
+	}     
+	if svc, err := d.lockdown.MisagentService(strProductVersion); err != nil {
+		return nil, err
+	} else {
+		d.misagent = svc
+		return d.misagent, nil
+	}     
+}
+
 func (d *device) syslogRelayService() (syslogRelay SyslogRelay, err error) {
 	if d.syslogRelay != nil {
 		return d.syslogRelay, nil
@@ -670,6 +693,13 @@ func (d *device) Reboot() (err error) {
 		return
 	}
 	return
+}
+
+func (d *device) EnterRecovery() error {
+	if _, err := d.lockdownService(); err != nil {
+		return err
+	}     
+	return d.lockdown.EnterRecovery()
 }
 
 func (d *device) PowerSource() (powerInfo map[string]interface{}, err error) {
@@ -921,7 +951,7 @@ func (d *device) XCTest(bundleID string, opts ...XCTestOption) (out <-chan strin
 	ctx, cancelFunc := context.WithCancel(context.TODO())
 	_out := make(chan string)
 
-	xcodeVersion := uint64(29)
+	xcodeVersion := uint64(30)
 
 	var tmSrv1 Testmanagerd
 	if tmSrv1, err = d.testmanagerdService(); err != nil {
@@ -957,7 +987,7 @@ func (d *device) XCTest(bundleID string, opts ...XCTestOption) (out <-chan strin
 	xcTestManager2.registerCallback("_XCT_logDebugMessage:", func(m libimobiledevice.DTXMessageResult) {
 		// more information ( each operation )
 		// fmt.Println("###### xcTestManager2 ### -->", m)
-		if strings.Contains(fmt.Sprintf("%s", m), "(null)") {
+		if strings.Contains(fmt.Sprintf("%s", m), "Received test runner ready reply with error: (null)") {
 			// fmt.Println("###### xcTestManager2 ### -->", fmt.Sprintf("%v", m.Aux[0]))
 			time.Sleep(time.Second)
 			if err = xcTestManager2.startExecutingTestPlan(xcodeVersion); err != nil {
